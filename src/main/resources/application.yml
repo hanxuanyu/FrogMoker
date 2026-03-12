@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: FrogMoker
+
+server:
+  port: 8080

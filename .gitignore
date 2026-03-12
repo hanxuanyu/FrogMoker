@@ -1,0 +1,65 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/resources/archetype-resources/google-services.json
+!**/src/test/resources/archetype-resources/google-services.json
+
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.netbeans_derby/
+
+### Eclipse ###
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+
+# External tool builders
+.externalToolBuilders/
+
+# Locally stored "Eclipse launch configurations"
+*.launch
+
+# PyDev specific (if used)
+*.pydevproject
+
+# CDT-specific (if used)
+.cproject
+
+# JDT-specific (if used)
+.classpath
+
+# Java annotation processor generated files
+.factorypath
+
+# Project specific settings
+.project
+
+# Service-now Cloud IDE
+.now/
+
+# VS Code
+.vscode/
+
+### Log files ###
+*.log
+logs/
+
+### Temp files ###
+temp/
+tmp/
