@@ -1,6 +1,32 @@
 spring:
   application:
     name: FrogMoker
+  datasource:
+    url: jdbc:sqlite:data/db/frogmoker.db
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: com.hxuanyu.frogmoker.infrastructure.persistence.SqliteDialect
+        format_sql: true
+    open-in-view: false
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+frogmoker:
+  storage:
+    root: data
 
 server:
   port: 8080
