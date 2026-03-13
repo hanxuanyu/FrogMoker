@@ -27,6 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { EnhancedMapEditor } from "@/components/EnhancedMapEditor"
 import { TemplateTextEditor } from "@/components/TemplateTextEditor"
 import { HttpRequestPreview } from "@/components/HttpRequestPreview"
+import { GenericRequestPreview } from "@/components/GenericRequestPreview"
 import CodeMirror from "@uiw/react-codemirror"
 import { json } from "@codemirror/lang-json"
 import { xml } from "@codemirror/lang-xml"
@@ -422,9 +423,12 @@ export function SenderPage() {
                   isParamVisible={isParamVisible}
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
-                  暂不支持该协议的预览
-                </div>
+                <GenericRequestPreview
+                  params={clientParams}
+                  isDark={isDark}
+                  protocol={protocols.find((p) => p.protocol === selectedProtocol)}
+                  isParamVisible={isParamVisible}
+                />
               )}
             </div>
           </div>
