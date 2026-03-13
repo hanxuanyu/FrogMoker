@@ -1,12 +1,10 @@
 package com.hxuanyu.frogmoker.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-/**
- * SPA 路由回退：所有非 /api、非静态资源的请求均返回 index.html，
- * 由前端 React Router 接管路由。
- */
+@Slf4j
 @Controller
 public class SpaController {
 
@@ -16,6 +14,7 @@ public class SpaController {
             "/templates/**"
     })
     public String spa() {
+        log.debug("Forwarding SPA route to index.html.");
         return "forward:/index.html";
     }
 }

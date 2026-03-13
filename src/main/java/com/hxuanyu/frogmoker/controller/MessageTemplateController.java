@@ -1,18 +1,32 @@
 package com.hxuanyu.frogmoker.controller;
 
 import com.hxuanyu.frogmoker.common.Result;
-import com.hxuanyu.frogmoker.dto.*;
+import com.hxuanyu.frogmoker.dto.FormatMessageRequest;
+import com.hxuanyu.frogmoker.dto.MessageTemplateDetailResponse;
+import com.hxuanyu.frogmoker.dto.MessageTemplateSummaryResponse;
+import com.hxuanyu.frogmoker.dto.ParseVariablesRequest;
+import com.hxuanyu.frogmoker.dto.RenderTemplateRequest;
+import com.hxuanyu.frogmoker.dto.SaveMessageTemplateRequest;
 import com.hxuanyu.frogmoker.service.MessageTemplateService;
 import com.hxuanyu.frogmoker.service.generator.VariableGeneratorDescriptor;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@Tag(name = "报文管理", description = "报文模板的增删改查及辅助功能")
+@Slf4j
+@Tag(name = "Message Template", description = "CRUD and helper operations for templates")
 @RestController
 @RequestMapping("/api/v1/message-templates")
 @RequiredArgsConstructor
@@ -20,68 +34,100 @@ public class MessageTemplateController {
 
     private final MessageTemplateService templateService;
 
-    // ==================== 模板 CRUD ====================
-
-    @Operation(summary = "创建报文模板")
+    @Operation(summary = "Create template")
     @PostMapping
     public Result<Long> create(@Validated @RequestBody SaveMessageTemplateRequest request) {
+        log.info("Create template request received. name={}, messageType={}, variableCount={}",
+                request.getName(), request.getMessageType(), sizeOf(request.getVariables()));
         Long id = templateService.saveTemplate(request);
+        log.info("Create template request completed. id={}, name={}", id, request.getName());
         return Result.ok(id);
     }
 
-    @Operation(summary = "更新报文模板")
+    @Operation(summary = "Update template")
     @PutMapping("/{id}")
     public Result<Void> update(@PathVariable Long id,
                                @Validated @RequestBody SaveMessageTemplateRequest request) {
+        log.info("Update template request received. id={}, name={}, messageType={}, variableCount={}",
+                id, request.getName(), request.getMessageType(), sizeOf(request.getVariables()));
         templateService.updateTemplate(id, request);
+        log.info("Update template request completed. id={}", id);
         return Result.ok();
     }
 
-    @Operation(summary = "删除报文模板")
+    @Operation(summary = "Delete template")
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
+        log.info("Delete template request received. id={}", id);
         templateService.deleteTemplate(id);
+        log.info("Delete template request completed. id={}", id);
         return Result.ok();
     }
 
-    @Operation(summary = "获取报文模板列表")
+    @Operation(summary = "List templates")
     @GetMapping
     public Result<List<MessageTemplateSummaryResponse>> list() {
-        return Result.ok(templateService.listTemplates());
+        log.debug("List templates request received.");
+        List<MessageTemplateSummaryResponse> templates = templateService.listTemplates();
+        log.debug("List templates request completed. count={}", templates.size());
+        return Result.ok(templates);
     }
 
-    @Operation(summary = "获取报文模板详情")
+    @Operation(summary = "Get template detail")
     @GetMapping("/{id}")
     public Result<MessageTemplateDetailResponse> detail(@PathVariable Long id) {
-        return Result.ok(templateService.getTemplateDetail(id));
+        log.debug("Get template detail request received. id={}", id);
+        MessageTemplateDetailResponse detail = templateService.getTemplateDetail(id);
+        log.debug("Get template detail request completed. id={}, variableCount={}", id, sizeOf(detail.getVariables()));
+        return Result.ok(detail);
     }
 
-    // ==================== 辅助功能 ====================
-
-    @Operation(summary = "格式化报文内容")
+    @Operation(summary = "Format content")
     @PostMapping("/format")
     public Result<String> format(@Validated @RequestBody FormatMessageRequest request) {
+        log.debug("Format content request received. messageType={}, contentLength={}",
+                request.getMessageType(), safeLength(request.getContent()));
         String formatted = templateService.formatContent(request.getMessageType(), request.getContent());
+        log.debug("Format content request completed. messageType={}, outputLength={}",
+                request.getMessageType(), safeLength(formatted));
         return Result.ok(formatted);
     }
 
-    @Operation(summary = "解析报文中的变量占位符")
+    @Operation(summary = "Parse template variables")
     @PostMapping("/parse-variables")
     public Result<List<String>> parseVariables(@Validated @RequestBody ParseVariablesRequest request) {
+        log.debug("Parse variables request received. messageType={}, contentLength={}",
+                request.getMessageType(), safeLength(request.getContent()));
         List<String> variables = templateService.parseVariables(request.getMessageType(), request.getContent());
+        log.debug("Parse variables request completed. messageType={}, variableCount={}",
+                request.getMessageType(), variables.size());
         return Result.ok(variables);
     }
 
-    @Operation(summary = "渲染报文模板（使用生成器填充变量值）")
+    @Operation(summary = "Render template")
     @PostMapping("/render")
     public Result<String> render(@Validated @RequestBody RenderTemplateRequest request) {
+        log.info("Render template request received. templateId={}", request.getTemplateId());
         String rendered = templateService.renderTemplate(request.getTemplateId());
+        log.info("Render template request completed. templateId={}, outputLength={}",
+                request.getTemplateId(), safeLength(rendered));
         return Result.ok(rendered);
     }
 
-    @Operation(summary = "获取所有可用的变量生成器描述")
+    @Operation(summary = "List variable generators")
     @GetMapping("/generators")
     public Result<List<VariableGeneratorDescriptor>> listGenerators() {
-        return Result.ok(templateService.listGeneratorDescriptors());
+        log.debug("List generator descriptors request received.");
+        List<VariableGeneratorDescriptor> descriptors = templateService.listGeneratorDescriptors();
+        log.debug("List generator descriptors request completed. count={}", descriptors.size());
+        return Result.ok(descriptors);
+    }
+
+    private int sizeOf(List<?> items) {
+        return items == null ? 0 : items.size();
+    }
+
+    private int safeLength(String value) {
+        return value == null ? 0 : value.length();
     }
 }

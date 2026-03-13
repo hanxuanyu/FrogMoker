@@ -1,12 +1,16 @@
 package com.hxuanyu.frogmoker.service.generator;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Map;
 
+@Slf4j
 @Component
 public class TimestampVariableGenerator implements VariableValueGenerator {
 
@@ -32,17 +36,27 @@ public class TimestampVariableGenerator implements VariableValueGenerator {
 
     @Override
     public String generate(Long variableId, Map<String, String> params) {
-        long offset = parseLong(params.getOrDefault("offsetSeconds", "0"), 0L);
-        LocalDateTime now = LocalDateTime.now().plusSeconds(offset);
+        long offsetSeconds = parseLong(params.getOrDefault("offsetSeconds", "0"), 0L);
+        LocalDateTime dateTime = LocalDateTime.now().plusSeconds(offsetSeconds);
         String format = params.getOrDefault("format", "");
+
         if (format == null || format.isEmpty()) {
-            java.time.Instant instant = now.atZone(java.time.ZoneId.systemDefault()).toInstant();
-            return String.valueOf(instant.toEpochMilli());
+            Instant instant = dateTime.atZone(ZoneId.systemDefault()).toInstant();
+            String result = String.valueOf(instant.toEpochMilli());
+            log.debug("Generated timestamp value. variableId={}, offsetSeconds={}, result={}", variableId, offsetSeconds, result);
+            return result;
         }
+
         try {
-            return now.format(DateTimeFormatter.ofPattern(format));
+            String result = dateTime.format(DateTimeFormatter.ofPattern(format));
+            log.debug("Generated formatted timestamp value. variableId={}, offsetSeconds={}, format={}, result={}",
+                    variableId, offsetSeconds, format, result);
+            return result;
         } catch (Exception e) {
-            return now.toString();
+            String fallback = dateTime.toString();
+            log.warn("Invalid timestamp format configured, using LocalDateTime.toString(). variableId={}, format={}, fallback={}",
+                    variableId, format, fallback, e);
+            return fallback;
         }
     }
 
@@ -50,6 +64,7 @@ public class TimestampVariableGenerator implements VariableValueGenerator {
         try {
             return Long.parseLong(value);
         } catch (Exception e) {
+            log.warn("Failed to parse long parameter for timestamp generator. value={}, defaultValue={}", value, defaultValue);
             return defaultValue;
         }
     }

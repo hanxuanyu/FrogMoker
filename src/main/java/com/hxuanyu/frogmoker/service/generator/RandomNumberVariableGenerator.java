@@ -1,11 +1,13 @@
 package com.hxuanyu.frogmoker.service.generator;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
+@Slf4j
 @Component
 public class RandomNumberVariableGenerator implements VariableValueGenerator {
 
@@ -34,11 +36,13 @@ public class RandomNumberVariableGenerator implements VariableValueGenerator {
         long min = parseLong(params.getOrDefault("min", "0"), 0L);
         long max = parseLong(params.getOrDefault("max", "9999"), 9999L);
         if (min > max) {
-            long tmp = min;
+            long temp = min;
             min = max;
-            max = tmp;
+            max = temp;
+            log.debug("Random number generator swapped invalid bounds. variableId={}, min={}, max={}", variableId, min, max);
         }
         long result = ThreadLocalRandom.current().nextLong(min, max + 1);
+        log.debug("Generated random number. variableId={}, min={}, max={}, result={}", variableId, min, max, result);
         return String.valueOf(result);
     }
 
@@ -46,6 +50,7 @@ public class RandomNumberVariableGenerator implements VariableValueGenerator {
         try {
             return Long.parseLong(value);
         } catch (Exception e) {
+            log.warn("Failed to parse long parameter for random number generator. value={}, defaultValue={}", value, defaultValue);
             return defaultValue;
         }
     }

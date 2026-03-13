@@ -33,17 +33,9 @@ public class DataSourceInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        // 确保数据库文件目录存在
-        if (datasourceUrl.startsWith("jdbc:sqlite:")) {
-            String dbPath = datasourceUrl.substring("jdbc:sqlite:".length());
-            Path path = Paths.get(dbPath).getParent();
-            if (path != null) {
-                Files.createDirectories(path);
-                log.info("数据库目录已就绪: {}", path.toAbsolutePath());
-            }
-        }
+        log.info("Initializing datasource schema. datasourceUrl={}", datasourceUrl);
+        ensureDatabaseDirectory();
 
-        // 执行 schema.sql 建表
         ClassPathResource resource = new ClassPathResource("schema.sql");
         String sql;
         try (BufferedReader reader = new BufferedReader(
@@ -51,14 +43,44 @@ public class DataSourceInitializer implements ApplicationRunner {
             sql = reader.lines().collect(Collectors.joining("\n"));
         }
 
+        int executedStatements = 0;
         try (Connection conn = dataSource.getConnection(); Statement stmt = conn.createStatement()) {
             for (String statement : sql.split(";")) {
                 String trimmed = statement.trim();
                 if (!trimmed.isEmpty()) {
                     stmt.execute(trimmed);
+                    executedStatements++;
+                    log.debug("Executed schema statement {}: {}", executedStatements, abbreviate(trimmed));
                 }
             }
-            log.info("数据库表初始化完成");
         }
+
+        log.info("Datasource schema initialization completed. statementCount={}", executedStatements);
+    }
+
+    private void ensureDatabaseDirectory() throws Exception {
+        if (!datasourceUrl.startsWith("jdbc:sqlite:")) {
+            return;
+        }
+
+        String dbPath = datasourceUrl.substring("jdbc:sqlite:".length());
+        Path parent = Paths.get(dbPath).getParent();
+        if (parent == null) {
+            return;
+        }
+
+        Files.createDirectories(parent);
+        log.info("Ensured SQLite database directory exists. path={}", parent.toAbsolutePath());
+    }
+
+    private String abbreviate(String value) {
+        if (value == null) {
+            return "";
+        }
+        String normalized = value.replaceAll("\\s+", " ").trim();
+        if (normalized.length() <= 160) {
+            return normalized;
+        }
+        return normalized.substring(0, 157) + "...";
     }
 }

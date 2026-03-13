@@ -1,11 +1,15 @@
 package com.hxuanyu.frogmoker;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
 
+import java.util.Arrays;
+
+@Slf4j
 @SpringBootApplication
 public class FrogMokerApplication {
 
@@ -22,14 +26,15 @@ public class FrogMokerApplication {
     @EventListener(ApplicationReadyEvent.class)
     public void onReady() {
         String port = env.getProperty("server.port", "8080");
-        String ctx  = env.getProperty("server.servlet.context-path", "");
-        String base = "http://localhost:" + port + ctx;
-        System.out.println("\n==================================================");
-        System.out.println("  FrogMoker 启动成功！");
-        System.out.println("  API  基础地址：" + base + "/api/v1");
-        System.out.println("  接口文档地址：" + base + "/doc.html");
-        System.out.println("  前端地址：" + base + "/");
-        System.out.println("==================================================\n");
-    }
+        String contextPath = env.getProperty("server.servlet.context-path", "");
+        String baseUrl = "http://localhost:" + port + contextPath;
+        String[] activeProfiles = env.getActiveProfiles();
+        String profileSummary = activeProfiles.length == 0 ? "[default]" : Arrays.toString(activeProfiles);
 
+        log.info("Application started successfully. profiles={}, apiBase={}, docsUrl={}, webUrl={}",
+                profileSummary,
+                baseUrl + "/api/v1",
+                baseUrl + "/doc.html",
+                baseUrl + "/");
+    }
 }

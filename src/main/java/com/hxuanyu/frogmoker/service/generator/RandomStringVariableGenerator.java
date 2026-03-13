@@ -1,11 +1,13 @@
 package com.hxuanyu.frogmoker.service.generator;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
+@Slf4j
 @Component
 public class RandomStringVariableGenerator implements VariableValueGenerator {
 
@@ -33,7 +35,7 @@ public class RandomStringVariableGenerator implements VariableValueGenerator {
                                 new SelectOption("numeric", "纯数字"),
                                 new SelectOption("alphanumeric", "字母+数字")
                         ),
-                        VariableGeneratorParamDescriptor.bool("uppercase", "全部大写", "是否将生成的字符串全部转为大写", false)
+                        VariableGeneratorParamDescriptor.bool("uppercase", "全部大写", "是否将生成的字符串全部转换为大写", false)
                 )
         );
     }
@@ -41,7 +43,10 @@ public class RandomStringVariableGenerator implements VariableValueGenerator {
     @Override
     public String generate(Long variableId, Map<String, String> params) {
         int length = parseInt(params.getOrDefault("length", "8"), 8);
-        if (length <= 0) length = 8;
+        if (length <= 0) {
+            log.debug("Random string generator received non-positive length, fallback to default. variableId={}, length={}", variableId, length);
+            length = 8;
+        }
 
         String charset = params.getOrDefault("charset", "alphanumeric");
         String pool;
@@ -57,16 +62,20 @@ public class RandomStringVariableGenerator implements VariableValueGenerator {
                 break;
         }
 
-        StringBuilder sb = new StringBuilder(length);
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+        StringBuilder builder = new StringBuilder(length);
+        ThreadLocalRandom random = ThreadLocalRandom.current();
         for (int i = 0; i < length; i++) {
-            sb.append(pool.charAt(rnd.nextInt(pool.length())));
+            builder.append(pool.charAt(random.nextInt(pool.length())));
         }
 
-        String result = sb.toString();
-        if ("true".equalsIgnoreCase(params.getOrDefault("uppercase", "false"))) {
+        String result = builder.toString();
+        boolean uppercase = "true".equalsIgnoreCase(params.getOrDefault("uppercase", "false"));
+        if (uppercase) {
             result = result.toUpperCase();
         }
+
+        log.debug("Generated random string. variableId={}, length={}, charset={}, uppercase={}, preview={}",
+                variableId, length, charset, uppercase, summarize(result));
         return result;
     }
 
@@ -74,7 +83,15 @@ public class RandomStringVariableGenerator implements VariableValueGenerator {
         try {
             return Integer.parseInt(value);
         } catch (Exception e) {
+            log.warn("Failed to parse integer parameter for random string generator. value={}, defaultValue={}", value, defaultValue);
             return defaultValue;
         }
+    }
+
+    private String summarize(String value) {
+        if (value == null || value.length() <= 48) {
+            return value;
+        }
+        return value.substring(0, 45) + "...";
     }
 }

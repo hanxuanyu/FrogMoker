@@ -1,0 +1,12 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+logging:
+  level:
+    root: INFO
+    com.hxuanyu.frogmoker: DEBUG
+    com.hxuanyu.frogmoker.mapper: OFF
+    org.apache.ibatis: WARN
+    com.baomidou.mybatisplus: INFO
