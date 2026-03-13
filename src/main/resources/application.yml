@@ -4,14 +4,15 @@ spring:
   datasource:
     url: jdbc:sqlite:data/db/frogmoker.db
     driver-class-name: org.sqlite.JDBC
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        dialect: com.hxuanyu.frogmoker.infrastructure.persistence.SqliteDialect
-        format_sql: true
-    open-in-view: false
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
 
 springdoc:
   api-docs:

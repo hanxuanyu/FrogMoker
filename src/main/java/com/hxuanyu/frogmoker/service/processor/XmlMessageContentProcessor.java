@@ -1,0 +1,84 @@
+package com.hxuanyu.frogmoker.service.processor;
+
+import org.springframework.stereotype.Component;
+import org.w3c.dom.Document;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.ByteArrayInputStream;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * XML报文处理器，占位符格式：${varName}
+ */
+@Component
+public class XmlMessageContentProcessor implements MessageContentProcessor {
+
+    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\$\\{([^}]+)}");
+
+    @Override
+    public String getMessageType() {
+        return "XML";
+    }
+
+    @Override
+    public String format(String content) {
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)));
+            doc.normalize();
+
+            TransformerFactory tf = TransformerFactory.newInstance();
+            Transformer transformer = tf.newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+
+            StringWriter writer = new StringWriter();
+            transformer.transform(new DOMSource(doc), new StreamResult(writer));
+            return writer.toString();
+        } catch (Exception e) {
+            return content;
+        }
+    }
+
+    @Override
+    public List<String> parseVariables(String content) {
+        List<String> variables = new ArrayList<>();
+        Matcher matcher = PLACEHOLDER_PATTERN.matcher(content);
+        while (matcher.find()) {
+            String varName = matcher.group(1).trim();
+            if (!variables.contains(varName)) {
+                variables.add(varName);
+            }
+        }
+        return variables;
+    }
+
+    @Override
+    public String render(String content, Map<String, String> variables) {
+        StringBuffer sb = new StringBuffer();
+        Matcher matcher = PLACEHOLDER_PATTERN.matcher(content);
+        while (matcher.find()) {
+            String varName = matcher.group(1).trim();
+            String value = variables.getOrDefault(varName, matcher.group(0));
+            matcher.appendReplacement(sb, Matcher.quoteReplacement(value));
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
+    }
+}

@@ -76,3 +76,4 @@ frontend/.env
 frontend/.env.*
 !frontend/.env.example
 /frontend/node_modules/
+/data/
