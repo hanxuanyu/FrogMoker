@@ -48,12 +48,21 @@ export interface SaveMessageTemplateRequest {
   variables: TemplateVariableRequest[]
 }
 
+export type ParamType = "TEXT" | "BOOLEAN" | "SELECT"
+
+export interface SelectOption {
+  value: string
+  label: string
+}
+
 export interface VariableGeneratorParamDescriptor {
   name: string
   label: string
   description: string
+  paramType: ParamType
   required: boolean
   defaultValue: string
+  options?: SelectOption[]
 }
 
 export interface VariableGeneratorDescriptor {

@@ -1,9 +1,9 @@
 package com.hxuanyu.frogmoker.service.generator;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.hxuanyu.frogmoker.entity.GeneratorSequenceState;
 import com.hxuanyu.frogmoker.mapper.GeneratorSequenceStateMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -16,11 +16,8 @@ public class SequenceVariableGenerator implements VariableValueGenerator {
 
     public static final String TYPE = "SEQUENCE";
 
-    private final GeneratorSequenceStateMapper sequenceStateMapper;
-
-    public SequenceVariableGenerator(GeneratorSequenceStateMapper sequenceStateMapper) {
-        this.sequenceStateMapper = sequenceStateMapper;
-    }
+    @Autowired
+    private GeneratorSequenceStateMapper sequenceStateMapper;
 
     @Override
     public String getType() {
@@ -32,60 +29,62 @@ public class SequenceVariableGenerator implements VariableValueGenerator {
         return new VariableGeneratorDescriptor(
                 TYPE,
                 "序列号",
-                "每次调用自增，支持日期时间前缀模板",
+                "每次调用自动递增，支持前缀和补零",
                 Arrays.asList(
-                        new VariableGeneratorParamDescriptor("prefix", "前缀模板", "支持日期格式如 yyyyMMdd", false, ""),
-                        new VariableGeneratorParamDescriptor("padding", "补零位数", "序号补零位数", false, "6"),
-                        new VariableGeneratorParamDescriptor("step", "递增步长", "每次递增步长", false, "1")
+                        VariableGeneratorParamDescriptor.text("prefix", "前缀", "序列号前缀，例如 ORD、SEQ，留空则无前缀", false, ""),
+                        VariableGeneratorParamDescriptor.text("datePattern", "日期模板", "在前缀后追加日期，例如 yyyyMMdd，留空则不追加", false, ""),
+                        VariableGeneratorParamDescriptor.text("padding", "补零位数", "序列号数字部分的最小位数，不足时左补零，例如填 4 则输出 0001", false, "4"),
+                        VariableGeneratorParamDescriptor.text("step", "步长", "每次递增的步长，默认为 1", false, "1")
                 )
         );
     }
 
     @Override
-    public synchronized String generate(Long variableId, Map<String, String> params) {
-        // 查询或初始化状态
+    public String generate(Long variableId, Map<String, String> params) {
+        String prefix = params.getOrDefault("prefix", "");
+        String datePattern = params.getOrDefault("datePattern", "");
+        int padding = parseInt(params.getOrDefault("padding", "4"), 4);
+        int step = parseInt(params.getOrDefault("step", "1"), 1);
+        if (step <= 0) step = 1;
+
+        // 获取或初始化序列状态
         GeneratorSequenceState state = sequenceStateMapper.selectOne(
-                new LambdaQueryWrapper<GeneratorSequenceState>()
-                        .eq(GeneratorSequenceState::getVariableId, variableId)
-        );
-
-        long step = parseLong(params.getOrDefault("step", "1"), 1L);
-
+                new LambdaQueryWrapper<GeneratorSequenceState>().eq(GeneratorSequenceState::getVariableId, variableId));
+        long nextVal;
         if (state == null) {
             state = new GeneratorSequenceState();
             state.setVariableId(variableId);
-            state.setCurrentValue(step);
-            state.setUpdatedAt(LocalDateTime.now());
+            state.setCurrentValue((long) step);
             sequenceStateMapper.insert(state);
+            nextVal = step;
         } else {
-            long next = state.getCurrentValue() + step;
-            state.setCurrentValue(next);
-            state.setUpdatedAt(LocalDateTime.now());
-            sequenceStateMapper.update(state,
-                    new LambdaUpdateWrapper<GeneratorSequenceState>()
-                            .eq(GeneratorSequenceState::getVariableId, variableId));
+            nextVal = state.getCurrentValue() + step;
+            state.setCurrentValue(nextVal);
+            sequenceStateMapper.updateById(state);
         }
 
-        long seq = state.getCurrentValue();
-        int padding = (int) parseLong(params.getOrDefault("padding", "6"), 6L);
-        String seqStr = String.format("%0" + padding + "d", seq);
-
-        String prefixTemplate = params.getOrDefault("prefix", "");
-        String prefix = "";
-        if (prefixTemplate != null && !prefixTemplate.isEmpty()) {
+        // 构建前缀部分
+        StringBuilder sb = new StringBuilder();
+        sb.append(prefix);
+        if (datePattern != null && !datePattern.isEmpty()) {
             try {
-                prefix = LocalDateTime.now().format(DateTimeFormatter.ofPattern(prefixTemplate));
-            } catch (Exception e) {
-                prefix = prefixTemplate;
+                sb.append(LocalDateTime.now().format(DateTimeFormatter.ofPattern(datePattern)));
+            } catch (Exception ignored) {
             }
         }
 
-        return prefix + seqStr;
+        // 数字部分补零
+        String numStr = String.valueOf(nextVal);
+        if (padding > numStr.length()) {
+            for (int i = 0; i < padding - numStr.length(); i++) sb.append('0');
+        }
+        sb.append(numStr);
+        return sb.toString();
     }
 
-    private long parseLong(String value, long defaultValue) {
+    private int parseInt(String value, int defaultValue) {
         try {
-            return Long.parseLong(value);
+            return Integer.parseInt(value);
         } catch (Exception e) {
             return defaultValue;
         }

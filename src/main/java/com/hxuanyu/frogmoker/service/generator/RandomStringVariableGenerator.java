@@ -27,9 +27,13 @@ public class RandomStringVariableGenerator implements VariableValueGenerator {
                 "随机字符串",
                 "生成指定长度的随机字符串",
                 Arrays.asList(
-                        new VariableGeneratorParamDescriptor("length", "长度", "生成字符串的长度", false, "8"),
-                        new VariableGeneratorParamDescriptor("charset", "字符集", "可选值：alpha（纯字母）、numeric（纯数字）、alphanumeric（字母+数字，默认）", false, "alphanumeric"),
-                        new VariableGeneratorParamDescriptor("uppercase", "大写", "是否全部大写，填 true 启用", false, "false")
+                        VariableGeneratorParamDescriptor.text("length", "长度", "生成字符串的长度，默认为 8", false, "8"),
+                        VariableGeneratorParamDescriptor.select("charset", "字符集", "选择生成字符串所使用的字符集", false, "alphanumeric",
+                                new SelectOption("alpha", "纯字母"),
+                                new SelectOption("numeric", "纯数字"),
+                                new SelectOption("alphanumeric", "字母+数字")
+                        ),
+                        VariableGeneratorParamDescriptor.bool("uppercase", "全部大写", "是否将生成的字符串全部转为大写", false)
                 )
         );
     }

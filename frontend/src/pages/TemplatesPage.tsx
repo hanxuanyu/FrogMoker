@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -254,6 +255,9 @@ export function TemplatesPage() {
                 {previewItem?.messageType}
               </Badge>
             </DialogTitle>
+            <DialogDescription>
+              {previewItem?.description || "报文模板预览"}
+            </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             <div>

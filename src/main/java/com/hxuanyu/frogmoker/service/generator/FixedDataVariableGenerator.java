@@ -2,7 +2,6 @@ package com.hxuanyu.frogmoker.service.generator;
 
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
@@ -20,10 +19,10 @@ public class FixedDataVariableGenerator implements VariableValueGenerator {
     public VariableGeneratorDescriptor getDescriptor() {
         return new VariableGeneratorDescriptor(
                 TYPE,
-                "固定数据",
-                "每次生成固定的值",
-                Arrays.asList(
-                        new VariableGeneratorParamDescriptor("value", "固定值", "固定值内容", true, "")
+                "固定值",
+                "每次调用返回相同的固定字符串",
+                Collections.singletonList(
+                        VariableGeneratorParamDescriptor.text("value", "固定值", "每次生成时返回的固定字符串内容", true, "")
                 )
         );
     }

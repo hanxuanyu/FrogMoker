@@ -23,8 +23,8 @@ public class RandomNumberVariableGenerator implements VariableValueGenerator {
                 "随机数",
                 "生成指定范围内的随机整数",
                 Arrays.asList(
-                        new VariableGeneratorParamDescriptor("min", "最小值", "随机数的最小值（含）", false, "0"),
-                        new VariableGeneratorParamDescriptor("max", "最大值", "随机数的最大值（含）", false, "9999")
+                        VariableGeneratorParamDescriptor.text("min", "最小值", "随机数的最小值（含）", false, "0"),
+                        VariableGeneratorParamDescriptor.text("max", "最大值", "随机数的最大值（含）", false, "9999")
                 )
         );
     }

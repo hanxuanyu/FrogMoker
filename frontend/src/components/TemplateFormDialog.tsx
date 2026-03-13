@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -52,10 +53,12 @@ export function TemplateFormDialog({ open, editTarget, onClose, onSaved }: Props
   const [parsing, setParsing] = useState(false)
   const initialized = useRef(false)
 
-  // 加载生成器列表
+  // 加载生成器列表（弹窗打开时加载，确保数据最新）
   useEffect(() => {
-    templateApi.listGenerators().then(setGenerators).catch(() => {})
-  }, [])
+    if (open) {
+      templateApi.listGenerators().then(setGenerators).catch(() => {})
+    }
+  }, [open])
 
   // 初始化表单
   useEffect(() => {
@@ -103,11 +106,16 @@ export function TemplateFormDialog({ open, editTarget, onClose, onSaved }: Props
       const names = await templateApi.parseVariables(messageType, content)
       // 保留已有变量配置，新增未配置的变量
       const existing = new Map(variables.map((v) => [v.variableName, v]))
+      const defaultDesc = generators.find((g) => g.type === DEFAULT_GENERATOR)
+      const defaultParams: Record<string, string> = {}
+      defaultDesc?.params.forEach((p) => {
+        if (p.defaultValue) defaultParams[p.name] = p.defaultValue
+      })
       const merged = names.map((n) =>
         existing.get(n) ?? {
           variableName: n,
           generatorType: DEFAULT_GENERATOR,
-          generatorParams: {},
+          generatorParams: { ...defaultParams },
         },
       )
       setVariables(merged)
@@ -126,7 +134,7 @@ export function TemplateFormDialog({ open, editTarget, onClose, onSaved }: Props
       const descriptor = generators.find((g) => g.type === variable.generatorType)
       if (descriptor) {
         for (const param of descriptor.params) {
-          if (param.required) {
+          if (param.required && param.paramType !== "BOOLEAN") {
             const val = variable.generatorParams?.[param.name]
             if (!val || !val.trim()) {
               toast.error(`变量 [${variable.variableName}] 的参数 [${param.label}] 为必填项`)
@@ -179,11 +187,11 @@ export function TemplateFormDialog({ open, editTarget, onClose, onSaved }: Props
           <DialogTitle className="text-base">
             {editTarget ? "编辑报文模板" : "新建报文模板"}
           </DialogTitle>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <DialogDescription>
             {editTarget
               ? "修改模板信息、报文内容及变量配置"
               : "填写模板基本信息，输入报文内容后可解析变量并配置生成规则"}
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-8 py-5 space-y-5">

@@ -23,8 +23,8 @@ public class UuidVariableGenerator implements VariableValueGenerator {
                 "UUID",
                 "每次调用生成一个随机 UUID",
                 Arrays.asList(
-                        new VariableGeneratorParamDescriptor("uppercase", "大写", "是否大写，填 true 启用", false, "false"),
-                        new VariableGeneratorParamDescriptor("removeDash", "去除连字符", "是否去除 - 连字符，填 true 启用", false, "false")
+                        VariableGeneratorParamDescriptor.bool("uppercase", "大写", "是否将 UUID 转为大写字母", false),
+                        VariableGeneratorParamDescriptor.bool("removeDash", "去除连字符", "是否去除 UUID 中的 - 连字符", false)
                 )
         );
     }
