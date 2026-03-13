@@ -10,6 +10,7 @@ import com.hxuanyu.frogmoker.entity.TemplateVariable;
 import com.hxuanyu.frogmoker.mapper.MessageTemplateMapper;
 import com.hxuanyu.frogmoker.mapper.TemplateVariableMapper;
 import com.hxuanyu.frogmoker.service.generator.VariableGeneratorDescriptor;
+import com.hxuanyu.frogmoker.service.generator.VariableGeneratorParamDescriptor;
 import com.hxuanyu.frogmoker.service.generator.VariableGeneratorRegistry;
 import com.hxuanyu.frogmoker.service.generator.VariableValueGenerator;
 import com.hxuanyu.frogmoker.service.processor.MessageContentProcessor;
@@ -133,6 +134,16 @@ public class MessageTemplateService {
         for (TemplateVariableRequest req : requests) {
             if (!generatorRegistry.exists(req.getGeneratorType())) {
                 throw new BusinessException("不支持的生成器类型: " + req.getGeneratorType());
+            }
+            VariableValueGenerator generator = generatorRegistry.getGenerator(req.getGeneratorType());
+            Map<String, String> params = req.getGeneratorParams() != null ? req.getGeneratorParams() : new HashMap<>();
+            for (VariableGeneratorParamDescriptor paramDesc : generator.getDescriptor().getParams()) {
+                if (paramDesc.isRequired()) {
+                    String val = params.get(paramDesc.getName());
+                    if (val == null || val.trim().isEmpty()) {
+                        throw new BusinessException(400, "变量 [" + req.getVariableName() + "] 的参数 [" + paramDesc.getName() + "] 为必填项");
+                    }
+                }
             }
             TemplateVariable variable = new TemplateVariable();
             variable.setTemplateId(templateId);

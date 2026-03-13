@@ -28,6 +28,7 @@ public class FrogMokerApplication {
         System.out.println("  FrogMoker 启动成功！");
         System.out.println("  API  基础地址：" + base + "/api/v1");
         System.out.println("  接口文档地址：" + base + "/doc.html");
+        System.out.println("  前端地址：" + base + "/");
         System.out.println("==================================================\n");
     }
 

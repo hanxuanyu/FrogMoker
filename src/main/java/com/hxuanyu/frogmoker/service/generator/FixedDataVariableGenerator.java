@@ -23,7 +23,7 @@ public class FixedDataVariableGenerator implements VariableValueGenerator {
                 "固定数据",
                 "每次生成固定的值",
                 Arrays.asList(
-                        new VariableGeneratorParamDescriptor("value", "固定值内容", true, "")
+                        new VariableGeneratorParamDescriptor("value", "固定值", "固定值内容", true, "")
                 )
         );
     }

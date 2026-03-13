@@ -34,9 +34,9 @@ public class SequenceVariableGenerator implements VariableValueGenerator {
                 "序列号",
                 "每次调用自增，支持日期时间前缀模板",
                 Arrays.asList(
-                        new VariableGeneratorParamDescriptor("prefix", "前缀模板，支持日期格式如 yyyyMMdd", false, ""),
-                        new VariableGeneratorParamDescriptor("padding", "序号补零位数", false, "6"),
-                        new VariableGeneratorParamDescriptor("step", "每次递增步长", false, "1")
+                        new VariableGeneratorParamDescriptor("prefix", "前缀模板", "支持日期格式如 yyyyMMdd", false, ""),
+                        new VariableGeneratorParamDescriptor("padding", "补零位数", "序号补零位数", false, "6"),
+                        new VariableGeneratorParamDescriptor("step", "递增步长", "每次递增步长", false, "1")
                 )
         );
     }
