@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd C:/workspace/project/java/FrogMoker && ./mvnw clean compile -DskipTests)",
+      "Bash(cd C:/workspace/project/java/FrogMoker && mvn clean compile -DskipTests)",
+      "Bash(cd C:/workspace/project/java/FrogMoker && mvn clean compile -DskipTests 2>&1 | tail -50)",
+      "Bash(cd C:/workspace/project/java/FrogMoker && mvn clean compile -DskipTests 2>&1 | tail -30)",
+      "Bash(cd C:/workspace/project/java/FrogMoker/frontend && npm run build 2>&1 | tail -50)",
+      "Bash(cd C:/workspace/project/java/FrogMoker/frontend && npx shadcn@latest add tabs)",
+      "Bash(cd C:/workspace/project/java/FrogMoker/frontend && npm run build 2>&1 | tail -30)",
+      "Bash(cd C:/workspace/project/java/FrogMoker && mvn clean compile -DskipTests 2>&1 | tail -20)"
+    ]
+  }
+}

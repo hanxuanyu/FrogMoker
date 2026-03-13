@@ -1,9 +1,12 @@
-import { FileText } from "lucide-react"
+import { FileText, Send } from "lucide-react"
 import { NavLink, Outlet } from "react-router-dom"
 import { Toaster } from "@/components/ui/sonner"
 import { cn } from "@/lib/utils"
 
-const navItems = [{ to: "/templates", label: "报文管理", icon: FileText }]
+const navItems = [
+  { to: "/templates", label: "报文管理", icon: FileText },
+  { to: "/sender", label: "报文发送", icon: Send },
+]
 
 export function Layout() {
   return (

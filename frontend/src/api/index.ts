@@ -4,6 +4,9 @@ import type {
   MessageTemplateSummary,
   SaveMessageTemplateRequest,
   VariableGeneratorDescriptor,
+  ProtocolClientDescriptor,
+  SendMessageRequest,
+  SendMessageResponse,
 } from "@/types"
 
 const http = axios.create({
@@ -51,4 +54,12 @@ export const templateApi = {
 
   listGenerators: (): Promise<VariableGeneratorDescriptor[]> =>
     http.get("/message-templates/generators"),
+}
+
+export const senderApi = {
+  listProtocols: (): Promise<ProtocolClientDescriptor[]> =>
+    http.get("/sender/protocols"),
+
+  send: (data: SendMessageRequest): Promise<SendMessageResponse> =>
+    http.post("/sender/send", data),
 }

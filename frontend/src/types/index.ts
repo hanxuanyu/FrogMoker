@@ -71,3 +71,36 @@ export interface VariableGeneratorDescriptor {
   description: string
   params: VariableGeneratorParamDescriptor[]
 }
+
+export interface ProtocolClientParamDescriptor {
+  name: string
+  label: string
+  description: string
+  paramType: ParamType
+  required: boolean
+  defaultValue: string
+  options?: SelectOption[]
+}
+
+export interface ProtocolClientDescriptor {
+  protocol: string
+  name: string
+  description: string
+  params: ProtocolClientParamDescriptor[]
+}
+
+export interface SendMessageRequest {
+  templateId?: number
+  customContent?: string
+  protocol: string
+  clientParams: Record<string, string>
+}
+
+export interface SendMessageResponse {
+  success: boolean
+  statusCode?: number
+  sentMessage: string
+  responseContent?: string
+  errorMessage?: string
+  duration: number
+}
