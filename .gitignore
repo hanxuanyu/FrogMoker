@@ -59,7 +59,19 @@ local.properties
 ### Log files ###
 *.log
 logs/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
 
 ### Temp files ###
 temp/
 tmp/
+
+### Frontend ###
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
