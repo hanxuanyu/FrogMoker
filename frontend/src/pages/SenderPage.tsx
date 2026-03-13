@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
-import { Send, Loader2, RefreshCw, CheckCircle2, XCircle, Clock, FileText, Edit3, AlignLeft, ClipboardPaste } from "lucide-react"
+import { Send, Loader2, RefreshCw, CheckCircle2, XCircle, Clock, FileText, Edit3, AlignLeft, ClipboardPaste, Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import {
@@ -38,6 +38,9 @@ export function SenderPage() {
   const [customContentType, setCustomContentType] = useState<MessageType>("JSON")
   const [isCustomMode, setIsCustomMode] = useState(false)
   const [formatting, setFormatting] = useState(false)
+  const [formattingResponse, setFormattingResponse] = useState(false)
+  const [responseFormatted, setResponseFormatted] = useState(false)
+  const [copied, setCopied] = useState(false)
   const [response, setResponse] = useState<SendMessageResponse | null>(null)
 
   const fetchTemplates = useCallback(async () => {
@@ -130,6 +133,34 @@ export function SenderPage() {
     }
   }
 
+  const handleFormatResponse = async () => {
+    if (!response?.responseContent) return
+    setFormattingResponse(true)
+    try {
+      const detectedType = detectResponseFormat(response.responseContent)
+      const formatted = await templateApi.format(detectedType, response.responseContent)
+      setResponse({ ...response, responseContent: formatted })
+      setResponseFormatted(true)
+      toast.success("格式化成功")
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "格式化失败")
+    } finally {
+      setFormattingResponse(false)
+    }
+  }
+
+  const handleCopyResponse = async () => {
+    if (!response?.responseContent) return
+    try {
+      await navigator.clipboard.writeText(response.responseContent)
+      setCopied(true)
+      toast.success("已复制到剪贴板")
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      toast.error("复制失败")
+    }
+  }
+
   const handlePreview = async () => {
     if (!selectedTemplateId) return
     setRendering(true)
@@ -169,6 +200,7 @@ export function SenderPage() {
     }
 
     setSending(true)
+    setResponseFormatted(false)
     try {
       const result = await senderApi.send({
         templateId: selectedTemplateId || undefined,
@@ -190,6 +222,14 @@ export function SenderPage() {
   }
 
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId)
+
+  const detectResponseFormat = (content: string): MessageType => {
+    if (!content) return "JSON"
+    const trimmed = content.trim()
+    if (trimmed.startsWith("<")) return "XML"
+    if (trimmed.startsWith("{") || trimmed.startsWith("[")) return "JSON"
+    return "JSON"
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -458,10 +498,53 @@ export function SenderPage() {
 
                 {response.success && response.responseContent && (
                   <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">响应内容</p>
-                    <pre className="text-xs font-mono bg-muted rounded-lg p-4 whitespace-pre-wrap break-all max-h-96 overflow-y-auto text-green-600 dark:text-green-400 border">
-                      {response.responseContent}
-                    </pre>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">响应内容</p>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs gap-1"
+                          onClick={handleCopyResponse}
+                        >
+                          {copied ? (
+                            <Check className="size-3 text-green-500" />
+                          ) : (
+                            <Copy className="size-3" />
+                          )}
+                          {copied ? "已复制" : "复制"}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs gap-1"
+                          disabled={formattingResponse || responseFormatted}
+                          onClick={handleFormatResponse}
+                        >
+                          {formattingResponse ? (
+                            <Loader2 className="size-3 animate-spin" />
+                          ) : (
+                            <AlignLeft className="size-3" />
+                          )}
+                          {responseFormatted ? "已格式化" : "格式化"}
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="rounded-md overflow-hidden border text-xs">
+                      <CodeMirror
+                        value={response.responseContent}
+                        height="400px"
+                        extensions={detectResponseFormat(response.responseContent) === "JSON" ? [json()] : [xml()]}
+                        theme={oneDark}
+                        editable={false}
+                        basicSetup={{
+                          lineNumbers: true,
+                          foldGutter: true,
+                          highlightActiveLine: false,
+                          highlightActiveLineGutter: false,
+                        }}
+                      />
+                    </div>
                   </div>
                 )}
 

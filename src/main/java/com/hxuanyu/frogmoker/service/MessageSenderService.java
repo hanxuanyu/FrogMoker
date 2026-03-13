@@ -63,15 +63,12 @@ public class MessageSenderService {
         // 发送报文
         ClientResponse clientResponse = client.send(messageContent, clientParams);
 
-        // 格式化响应内容
-        String formattedResponse = formatResponseContent(clientResponse.getContent());
-
         // 构造响应
         SendMessageResponse response = new SendMessageResponse();
         response.setSuccess(clientResponse.isSuccess());
         response.setStatusCode(clientResponse.getStatusCode());
         response.setSentMessage(messageContent);
-        response.setResponseContent(formattedResponse);
+        response.setResponseContent(clientResponse.getContent());
         response.setErrorMessage(clientResponse.getErrorMessage());
         response.setDuration(clientResponse.getDuration());
 
@@ -98,57 +95,6 @@ public class MessageSenderService {
                 throw new BusinessException("参数 [" + paramDesc.getLabel() + "] 为必填项");
             }
         }
-    }
-
-    private String formatResponseContent(String content) {
-        if (content == null || content.trim().isEmpty()) {
-            return content;
-        }
-
-        String trimmed = content.trim();
-
-        // 尝试检测并格式化 JSON
-        if (isJson(trimmed)) {
-            try {
-                String formatted = templateService.formatContent("JSON", trimmed);
-                log.debug("Response formatted as JSON. originalLength={}, formattedLength={}",
-                        trimmed.length(), formatted.length());
-                return formatted;
-            } catch (Exception e) {
-                log.debug("Failed to format response as JSON, returning original. error={}", e.getMessage());
-            }
-        }
-
-        // 尝试检测并格式化 XML
-        if (isXml(trimmed)) {
-            try {
-                String formatted = templateService.formatContent("XML", trimmed);
-                log.debug("Response formatted as XML. originalLength={}, formattedLength={}",
-                        trimmed.length(), formatted.length());
-                return formatted;
-            } catch (Exception e) {
-                log.debug("Failed to format response as XML, returning original. error={}", e.getMessage());
-            }
-        }
-
-        // 无法识别格式，返回原内容
-        log.debug("Response format not recognized, returning original. contentLength={}", trimmed.length());
-        return content;
-    }
-
-    private boolean isJson(String content) {
-        if (content == null || content.isEmpty()) {
-            return false;
-        }
-        char first = content.charAt(0);
-        return first == '{' || first == '[';
-    }
-
-    private boolean isXml(String content) {
-        if (content == null || content.isEmpty()) {
-            return false;
-        }
-        return content.charAt(0) == '<';
     }
 
     private String normalizeProtocol(String protocol) {
