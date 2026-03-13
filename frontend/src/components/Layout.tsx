@@ -1,18 +1,39 @@
 import { useState } from "react"
-import { FileText, Send, Menu } from "lucide-react"
-import { NavLink, Outlet } from "react-router-dom"
+import { FileText, Send, Menu, HelpCircle } from "lucide-react"
+import { NavLink, Outlet, useLocation } from "react-router-dom"
 import { Toaster } from "@/components/ui/sonner"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { ThemeSwitcher } from "@/components/ThemeSwitcher"
 import { cn } from "@/lib/utils"
 
 const navItems = [
-  { to: "/templates", label: "报文管理", icon: FileText },
-  { to: "/sender", label: "报文发送", icon: Send },
+  {
+    to: "/templates",
+    label: "报文管理",
+    icon: FileText,
+    description: "管理请求报文模板，支持 JSON / XML 格式及变量占位"
+  },
+  {
+    to: "/sender",
+    label: "报文发送",
+    icon: Send,
+    description: "选择模板和协议，配置参数后发送报文"
+  },
 ]
 
 export function Layout() {
   const [collapsed, setCollapsed] = useState(false)
+  const [pageActions, setPageActions] = useState<React.ReactNode>(null)
+  const location = useLocation()
+
+  // 获取当前页面信息
+  const currentPage = navItems.find(item => location.pathname.startsWith(item.to))
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -59,7 +80,7 @@ export function Layout() {
         collapsed ? "ml-16" : "ml-52"
       )}>
         {/* 固定顶部导航栏 */}
-        <header className="h-[57px] border-b bg-background flex items-center px-4 shrink-0 fixed top-0 right-0 z-10 gap-2"
+        <header className="h-[57px] border-b bg-background flex items-center px-4 shrink-0 fixed top-0 right-0 z-10 gap-3"
           style={{ left: collapsed ? "4rem" : "13rem" }}
         >
           <Button
@@ -70,13 +91,64 @@ export function Layout() {
           >
             <Menu className="size-4" />
           </Button>
-          <div className="flex-1" />
-          <ThemeSwitcher />
+
+          {/* 页面标题和描述 */}
+          {currentPage && (
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <currentPage.icon className="size-4 text-muted-foreground shrink-0" />
+              <div className="min-w-0">
+                <h1 className="text-sm font-semibold leading-none">{currentPage.label}</h1>
+                <p className="text-xs text-muted-foreground mt-0.5 truncate">{currentPage.description}</p>
+              </div>
+            </div>
+          )}
+
+          {/* 页面操作按钮区域 */}
+          <div className="flex items-center gap-2 shrink-0">
+            {pageActions}
+          </div>
+
+          {/* 右侧操作区 */}
+          <div className="flex items-center gap-1 shrink-0">
+            <div className="w-px h-6 bg-border mx-1" />
+            <div className="scale-90 origin-right">
+              <ThemeSwitcher />
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8"
+                  title="帮助"
+                >
+                  <HelpCircle className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem asChild>
+                  <a href="https://github.com/hanxuanyu/FrogMoker" target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                    <span>📖 项目文档</span>
+                  </a>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <a href="https://github.com/hanxuanyu/FrogMoker/issues" target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                    <span>🐛 反馈问题</span>
+                  </a>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <a href="https://github.com/hanxuanyu/FrogMoker" target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                    <span>⭐ GitHub 仓库</span>
+                  </a>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </header>
 
         {/* 可滚动内容区域 */}
         <main className="flex-1 overflow-hidden mt-[57px]">
-          <Outlet />
+          <Outlet context={{ setPageActions }} />
         </main>
       </div>
 

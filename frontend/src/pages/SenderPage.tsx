@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
+import { useOutletContext } from "react-router-dom"
 import { toast } from "sonner"
 import { Send, Loader2, RefreshCw, CheckCircle2, XCircle, Clock, FileText, Edit3, AlignLeft, ClipboardPaste, Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -27,6 +28,7 @@ import type {
 } from "@/types"
 
 export function SenderPage() {
+  const { setPageActions } = useOutletContext<{ setPageActions: (actions: React.ReactNode) => void }>()
   const { theme } = useTheme()
   const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches)
   const [templates, setTemplates] = useState<MessageTemplateSummary[]>([])
@@ -72,6 +74,16 @@ export function SenderPage() {
     setLoading(true)
     Promise.all([fetchTemplates(), fetchProtocols()]).finally(() => setLoading(false))
   }, [fetchTemplates, fetchProtocols])
+
+  // 设置页面操作按钮
+  useEffect(() => {
+    setPageActions(
+      <Button variant="outline" size="sm" onClick={() => { fetchTemplates(); fetchProtocols() }} disabled={loading}>
+        <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
+      </Button>
+    )
+    return () => setPageActions(null)
+  }, [loading, setPageActions, fetchTemplates, fetchProtocols])
 
   useEffect(() => {
     if (selectedProtocol) {
@@ -237,16 +249,6 @@ export function SenderPage() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex items-center justify-between px-6 py-4 border-b shrink-0 bg-background">
-        <div>
-          <h1 className="text-lg font-semibold">报文发送</h1>
-          <p className="text-sm text-muted-foreground">选择模板和协议，配置参数后发送报文</p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => { fetchTemplates(); fetchProtocols() }} disabled={loading}>
-          <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
-        </Button>
-      </div>
-
       <div className="flex-1 overflow-hidden flex">
         {/* 左侧：配置区域 */}
         <div className="w-[480px] border-r flex flex-col shrink-0 overflow-hidden">

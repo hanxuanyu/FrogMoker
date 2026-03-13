@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
+import { useOutletContext } from "react-router-dom"
 import { toast } from "sonner"
 import { Plus, Pencil, Trash2, Eye, Loader2, RefreshCw, Play, ChevronDown, ChevronRight, Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -25,6 +26,7 @@ import { templateApi } from "@/api"
 import type { MessageTemplateDetail, MessageTemplateSummary } from "@/types"
 
 export function TemplatesPage() {
+  const { setPageActions } = useOutletContext<{ setPageActions: (actions: React.ReactNode) => void }>()
   const [list, setList] = useState<MessageTemplateSummary[]>([])
   const [loading, setLoading] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
@@ -52,6 +54,22 @@ export function TemplatesPage() {
   useEffect(() => {
     fetchList()
   }, [fetchList])
+
+  // 设置页面操作按钮
+  useEffect(() => {
+    setPageActions(
+      <>
+        <Button variant="outline" size="sm" onClick={fetchList} disabled={loading}>
+          <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
+        </Button>
+        <Button size="sm" onClick={handleNew}>
+          <Plus className="size-4 mr-1" />
+          新建模板
+        </Button>
+      </>
+    )
+    return () => setPageActions(null)
+  }, [loading, setPageActions])
 
   const handleEdit = async (id: number) => {
     try {
@@ -121,23 +139,6 @@ export function TemplatesPage() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* 页头 */}
-      <div className="flex items-center justify-between px-6 py-4 border-b shrink-0 bg-background">
-        <div>
-          <h1 className="text-lg font-semibold">报文管理</h1>
-          <p className="text-sm text-muted-foreground">管理请求报文模板，支持 JSON / XML 格式及变量占位</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={fetchList} disabled={loading}>
-            <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
-          </Button>
-          <Button size="sm" onClick={handleNew}>
-            <Plus className="size-4 mr-1" />
-            新建模板
-          </Button>
-        </div>
-      </div>
-
       {/* 列表 */}
       <div className="flex-1 overflow-y-auto p-6">
         {loading && list.length === 0 ? (
