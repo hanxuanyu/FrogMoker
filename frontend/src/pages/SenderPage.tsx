@@ -16,6 +16,8 @@ import CodeMirror from "@uiw/react-codemirror"
 import { json } from "@codemirror/lang-json"
 import { xml } from "@codemirror/lang-xml"
 import { oneDark } from "@codemirror/theme-one-dark"
+import { EditorView } from "@codemirror/view"
+import { useTheme } from "@/components/theme-provider"
 import { templateApi, senderApi } from "@/api"
 import type {
   MessageTemplateSummary,
@@ -25,6 +27,8 @@ import type {
 } from "@/types"
 
 export function SenderPage() {
+  const { theme } = useTheme()
+  const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches)
   const [templates, setTemplates] = useState<MessageTemplateSummary[]>([])
   const [protocols, setProtocols] = useState<ProtocolClientDescriptor[]>([])
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null)
@@ -232,8 +236,8 @@ export function SenderPage() {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="flex items-center justify-between px-6 py-4 border-b shrink-0 bg-background">
         <div>
           <h1 className="text-lg font-semibold">报文发送</h1>
           <p className="text-sm text-muted-foreground">选择模板和协议，配置参数后发送报文</p>
@@ -245,7 +249,7 @@ export function SenderPage() {
 
       <div className="flex-1 overflow-hidden flex">
         {/* 左侧：配置区域 */}
-        <div className="w-[480px] border-r flex flex-col shrink-0">
+        <div className="w-[480px] border-r flex flex-col shrink-0 overflow-hidden">
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {/* 模板选择 */}
             <section className="space-y-3">
@@ -362,78 +366,81 @@ export function SenderPage() {
 
         {/* 右侧：预览和响应区域 */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {/* 请求预览 */}
-            <section className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  {isCustomMode ? "自定义报文" : "请求预览"}
-                </h2>
-                <div className="flex gap-2">
-                  {isCustomMode && (
-                    <>
-                      <Select
-                        value={customContentType}
-                        onValueChange={(v) => setCustomContentType(v as MessageType)}
-                      >
-                        <SelectTrigger className="h-7 w-24 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="JSON">JSON</SelectItem>
-                          <SelectItem value="XML">XML</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs gap-1"
-                        onClick={handlePaste}
-                      >
-                        <ClipboardPaste className="size-3" />
-                        粘贴
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs gap-1"
-                        disabled={formatting || !customContent.trim()}
-                        onClick={handleFormat}
-                      >
-                        {formatting ? (
-                          <Loader2 className="size-3 animate-spin" />
-                        ) : (
-                          <AlignLeft className="size-3" />
-                        )}
-                        格式化
-                      </Button>
-                    </>
-                  )}
-                  {selectedTemplateId && !isCustomMode && (
+          {/* 请求预览区域 - 占上半部分 */}
+          <div className="flex-1 flex flex-col border-b overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-3 border-b shrink-0 bg-muted/30">
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                {isCustomMode ? "自定义报文" : "请求预览"}
+              </h2>
+              <div className="flex gap-2">
+                {isCustomMode && (
+                  <>
+                    <Select
+                      value={customContentType}
+                      onValueChange={(v) => setCustomContentType(v as MessageType)}
+                    >
+                      <SelectTrigger className="h-7 w-24 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="JSON">JSON</SelectItem>
+                        <SelectItem value="XML">XML</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 text-xs"
-                      onClick={handlePreview}
-                      disabled={rendering}
+                      className="h-7 text-xs gap-1"
+                      onClick={handlePaste}
                     >
-                      {rendering ? (
-                        <Loader2 className="size-3 animate-spin mr-1" />
-                      ) : (
-                        <RefreshCw className="size-3 mr-1" />
-                      )}
-                      刷新
+                      <ClipboardPaste className="size-3" />
+                      粘贴
                     </Button>
-                  )}
-                </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs gap-1"
+                      disabled={formatting || !customContent.trim()}
+                      onClick={handleFormat}
+                    >
+                      {formatting ? (
+                        <Loader2 className="size-3 animate-spin" />
+                      ) : (
+                        <AlignLeft className="size-3" />
+                      )}
+                      格式化
+                    </Button>
+                  </>
+                )}
+                {selectedTemplateId && !isCustomMode && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={handlePreview}
+                    disabled={rendering}
+                  >
+                    {rendering ? (
+                      <Loader2 className="size-3 animate-spin mr-1" />
+                    ) : (
+                      <RefreshCw className="size-3 mr-1" />
+                    )}
+                    刷新
+                  </Button>
+                )}
               </div>
+            </div>
+            <div className="flex-1 min-h-0 relative">
               {isCustomMode ? (
-                <div className="rounded-md overflow-hidden border text-xs">
+                <div className="absolute inset-0 overflow-hidden text-xs" style={{ backgroundColor: isDark ? '#282c34' : '#ffffff' }}>
                   <CodeMirror
                     value={customContent}
-                    height="400px"
-                    extensions={customContentType === "JSON" ? [json()] : [xml()]}
-                    theme={oneDark}
+                    height="100%"
+                    extensions={[
+                      customContentType === "JSON" ? json() : xml(),
+                      EditorView.lineWrapping
+                    ]}
+                    theme={isDark ? oneDark : "light"}
                     placeholder={customContentType === "JSON"
                       ? '{\n  "key": "value"\n}'
                       : '<root>\n  <element>value</element>\n</root>'}
@@ -446,118 +453,134 @@ export function SenderPage() {
                       closeBrackets: true,
                       indentOnInput: true,
                     }}
+                    style={{ height: '100%', overflow: 'auto' }}
                   />
                 </div>
               ) : selectedTemplateId ? (
                 rendering ? (
-                  <div className="flex items-center justify-center h-48 text-xs text-muted-foreground bg-muted/50 rounded-lg border">
+                  <div className="flex items-center justify-center h-full text-xs text-muted-foreground bg-muted/50">
                     <Loader2 className="size-4 animate-spin mr-2" />
                     渲染中...
                   </div>
                 ) : previewContent ? (
-                  <pre className="text-xs font-mono bg-muted rounded-lg p-4 whitespace-pre-wrap break-all max-h-96 overflow-y-auto border">
+                  <pre className="text-xs font-mono bg-muted p-4 whitespace-pre-wrap break-all h-full overflow-y-auto">
                     {previewContent}
                   </pre>
                 ) : (
-                  <div className="flex items-center justify-center h-48 text-xs text-muted-foreground bg-muted/50 rounded-lg border-2 border-dashed">
+                  <div className="flex items-center justify-center h-full text-xs text-muted-foreground bg-muted/50 border-2 border-dashed">
                     渲染失败或内容为空
                   </div>
                 )
               ) : (
-                <div className="flex items-center justify-center h-48 text-xs text-muted-foreground bg-muted/50 rounded-lg border-2 border-dashed">
+                <div className="flex items-center justify-center h-full text-xs text-muted-foreground bg-muted/50 border-2 border-dashed">
                   请选择报文模板或使用自定义模式
                 </div>
               )}
-            </section>
+            </div>
+          </div>
 
-            {/* 响应结果 */}
-            {response && (
-              <section className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">响应结果</h2>
-                  <div className="flex items-center gap-4 text-sm">
-                    <div className="flex items-center gap-1">
-                      {response.success ? (
-                        <CheckCircle2 className="size-4 text-green-500" />
-                      ) : (
-                        <XCircle className="size-4 text-red-500" />
-                      )}
-                      <span className={response.success ? "text-green-600" : "text-red-600"}>
-                        {response.success ? "成功" : "失败"}
-                      </span>
-                    </div>
-                    {response.statusCode && (
-                      <span className="text-muted-foreground">状态码: {response.statusCode}</span>
+          {/* 响应结果区域 - 占下半部分 */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-3 border-b shrink-0 bg-muted/30">
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">响应结果</h2>
+              {response && (
+                <div className="flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-1">
+                    {response.success ? (
+                      <CheckCircle2 className="size-4 text-green-500" />
+                    ) : (
+                      <XCircle className="size-4 text-red-500" />
                     )}
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <Clock className="size-3" />
-                      <span>{response.duration}ms</span>
-                    </div>
+                    <span className={response.success ? "text-green-600" : "text-red-600"}>
+                      {response.success ? "成功" : "失败"}
+                    </span>
+                  </div>
+                  {response.statusCode && (
+                    <span className="text-muted-foreground">状态码: {response.statusCode}</span>
+                  )}
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <Clock className="size-3" />
+                    <span>{response.duration}ms</span>
                   </div>
                 </div>
-
-                {response.success && response.responseContent && (
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">响应内容</p>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs gap-1"
-                          onClick={handleCopyResponse}
-                        >
-                          {copied ? (
-                            <Check className="size-3 text-green-500" />
-                          ) : (
-                            <Copy className="size-3" />
-                          )}
-                          {copied ? "已复制" : "复制"}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs gap-1"
-                          disabled={formattingResponse || responseFormatted}
-                          onClick={handleFormatResponse}
-                        >
-                          {formattingResponse ? (
-                            <Loader2 className="size-3 animate-spin" />
-                          ) : (
-                            <AlignLeft className="size-3" />
-                          )}
-                          {responseFormatted ? "已格式化" : "格式化"}
-                        </Button>
+              )}
+            </div>
+            <div className="flex-1 min-h-0">
+              {response ? (
+                <>
+                  {response.success && response.responseContent && (
+                    <div className="h-full flex flex-col">
+                      <div className="flex items-center justify-between px-6 pt-6 pb-2 shrink-0">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">响应内容</p>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs gap-1"
+                            onClick={handleCopyResponse}
+                          >
+                            {copied ? (
+                              <Check className="size-3 text-green-500" />
+                            ) : (
+                              <Copy className="size-3" />
+                            )}
+                            {copied ? "已复制" : "复制"}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs gap-1"
+                            disabled={formattingResponse || responseFormatted}
+                            onClick={handleFormatResponse}
+                          >
+                            {formattingResponse ? (
+                              <Loader2 className="size-3 animate-spin" />
+                            ) : (
+                              <AlignLeft className="size-3" />
+                            )}
+                            {responseFormatted ? "已格式化" : "格式化"}
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="text-xs flex-1 min-h-0 relative">
+                        <div className="absolute inset-0 overflow-hidden" style={{ backgroundColor: isDark ? '#282c34' : '#ffffff' }}>
+                          <CodeMirror
+                            value={response.responseContent}
+                            height="100%"
+                            extensions={[
+                              detectResponseFormat(response.responseContent) === "JSON" ? json() : xml(),
+                              EditorView.lineWrapping
+                            ]}
+                            theme={isDark ? oneDark : "light"}
+                            editable={false}
+                            basicSetup={{
+                              lineNumbers: true,
+                              foldGutter: true,
+                              highlightActiveLine: false,
+                              highlightActiveLineGutter: false,
+                            }}
+                            style={{ height: '100%', overflow: 'auto' }}
+                          />
+                        </div>
                       </div>
                     </div>
-                    <div className="rounded-md overflow-hidden border text-xs">
-                      <CodeMirror
-                        value={response.responseContent}
-                        height="400px"
-                        extensions={detectResponseFormat(response.responseContent) === "JSON" ? [json()] : [xml()]}
-                        theme={oneDark}
-                        editable={false}
-                        basicSetup={{
-                          lineNumbers: true,
-                          foldGutter: true,
-                          highlightActiveLine: false,
-                          highlightActiveLineGutter: false,
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
+                  )}
 
-                {!response.success && response.errorMessage && (
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">错误信息</p>
-                    <pre className="text-xs font-mono bg-muted rounded-lg p-4 whitespace-pre-wrap break-all text-red-600 dark:text-red-400 border">
-                      {response.errorMessage}
-                    </pre>
-                  </div>
-                )}
-              </section>
-            )}
+                  {!response.success && response.errorMessage && (
+                    <div className="p-6">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">错误信息</p>
+                      <pre className="text-xs font-mono bg-muted rounded-lg p-4 whitespace-pre-wrap break-all text-red-600 dark:text-red-400 border">
+                        {response.errorMessage}
+                      </pre>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center justify-center h-full text-xs text-muted-foreground bg-muted/50 border-2 border-dashed">
+                  发送报文后将在此显示响应结果
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

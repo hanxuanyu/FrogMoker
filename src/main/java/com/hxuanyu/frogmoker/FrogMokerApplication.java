@@ -31,7 +31,7 @@ public class FrogMokerApplication {
         String[] activeProfiles = env.getActiveProfiles();
         String profileSummary = activeProfiles.length == 0 ? "[default]" : Arrays.toString(activeProfiles);
 
-        log.info("Application started successfully. profiles={}, apiBase={}, docsUrl={}, webUrl={}",
+        log.info("Application started successfully. \nprofiles={}, \napiBase={}, \ndocsUrl={}, \nwebUrl={}",
                 profileSummary,
                 baseUrl + "/api/v1",
                 baseUrl + "/doc.html",
