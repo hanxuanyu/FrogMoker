@@ -1,6 +1,5 @@
 package com.hxuanyu.frogmoker.service.client;
 
-import com.hxuanyu.frogmoker.service.generator.ParamType;
 import com.hxuanyu.frogmoker.service.generator.SelectOption;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
@@ -13,6 +12,8 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
+import static com.hxuanyu.frogmoker.service.client.ProtocolClientParamBuilder.*;
 
 /**
  * HTTP 协议客户端实现
@@ -43,14 +44,18 @@ public class HttpProtocolClient implements ProtocolClient {
                 "通过 HTTP/HTTPS 协议发送请求，支持完整的请求配置",
                 Arrays.asList(
                         // 请求地址
-                        createParam("url", "请求地址", "完整的 HTTP/HTTPS 地址",
-                                ParamType.TEXT, true, "", null, null,
-                                "http://localhost:8080/api/test"),
+                        text("url", "请求地址")
+                                .description("完整的 HTTP/HTTPS 地址")
+                                .required()
+                                .placeholder("http://localhost:8080/api/test")
+                                .build(),
 
                         // 请求方法
-                        createParam("method", "请求方法", "HTTP 请求方法",
-                                ParamType.SELECT, true, "POST",
-                                Arrays.asList(
+                        select("method", "请求方法")
+                                .description("HTTP 请求方法")
+                                .required()
+                                .defaultValue("POST")
+                                .options(
                                         new SelectOption("GET", "GET"),
                                         new SelectOption("POST", "POST"),
                                         new SelectOption("PUT", "PUT"),
@@ -58,66 +63,67 @@ public class HttpProtocolClient implements ProtocolClient {
                                         new SelectOption("PATCH", "PATCH"),
                                         new SelectOption("HEAD", "HEAD"),
                                         new SelectOption("OPTIONS", "OPTIONS")
-                                ), null, null),
+                                )
+                                .build(),
 
                         // 查询参数（MAP 类型）- 仅 GET/HEAD 请求显示
-                        createMapParamWithDependency("queryParams", "查询参数",
-                                "URL 查询参数，键值对格式",
-                                false, "{}",
-                                "参数名", "参数值",
-                                createDependency("method", Arrays.asList("GET", "HEAD"),
-                                        ParamDependency.DependencyCondition.EQUALS)),
+                        map("queryParams", "查询参数")
+                                .description("URL 查询参数，键值对格式")
+                                .mapLabels("参数名", "参数值")
+                                .dependsOn("method", "GET", "HEAD")
+                                .build(),
 
                         // Content-Type - 仅非 GET/HEAD 请求显示
-                        createParam("contentType", "Content-Type", "请求内容类型",
-                                ParamType.SELECT, false, "application/json",
-                                Arrays.asList(
+                        select("contentType", "Content-Type")
+                                .description("请求内容类型")
+                                .defaultValue("application/json")
+                                .options(
                                         new SelectOption("application/json", "application/json"),
                                         new SelectOption("application/xml", "application/xml"),
                                         new SelectOption("text/plain", "text/plain"),
                                         new SelectOption("application/x-www-form-urlencoded", "application/x-www-form-urlencoded")
-                                ),
-                                createDependency("method", Arrays.asList("POST", "PUT", "PATCH", "DELETE"),
-                                        ParamDependency.DependencyCondition.EQUALS),
-                                null),
+                                )
+                                .dependsOn("method", "POST", "PUT", "PATCH", "DELETE")
+                                .build(),
 
                         // 请求体（TEXTAREA 类型）- 仅非 GET/HEAD 且 Content-Type 不是 form-urlencoded 时显示
-                        createParam("body", "请求体", "请求体内容，支持 JSON/XML/文本等格式",
-                                ParamType.TEXTAREA, false, "", null,
-                                createMultiDependency(ParamDependency.CombineLogic.AND, Arrays.asList(
-                                        createDependency("method", Arrays.asList("POST", "PUT", "PATCH", "DELETE"),
-                                                ParamDependency.DependencyCondition.EQUALS),
-                                        createDependency("contentType", Arrays.asList("application/x-www-form-urlencoded"),
-                                                ParamDependency.DependencyCondition.NOT_EQUALS)
-                                )),
-                                "输入请求体内容..."),
+                        textarea("body", "请求体")
+                                .description("请求体内容，支持 JSON/XML/文本等格式")
+                                .placeholder("输入请求体内容...")
+                                .dependsOnAll(
+                                        DependencyBuilder.equals("method", "POST", "PUT", "PATCH", "DELETE"),
+                                        DependencyBuilder.notEquals("contentType", "application/x-www-form-urlencoded")
+                                )
+                                .build(),
 
                         // 表单数据（MAP 类型）- 仅 POST/PUT/PATCH/DELETE 且 Content-Type 为 form-urlencoded 时显示
-                        createMapParamWithDependency("formData", "表单数据",
-                                "表单键值对数据，适用于 application/x-www-form-urlencoded",
-                                false, "{}",
-                                "字段名", "字段值",
-                                createMultiDependency(ParamDependency.CombineLogic.AND, Arrays.asList(
-                                        createDependency("method", Arrays.asList("POST", "PUT", "PATCH", "DELETE"),
-                                                ParamDependency.DependencyCondition.EQUALS),
-                                        createDependency("contentType", Arrays.asList("application/x-www-form-urlencoded"),
-                                                ParamDependency.DependencyCondition.EQUALS)
-                                ))),
+                        map("formData", "表单数据")
+                                .description("表单键值对数据，适用于 application/x-www-form-urlencoded")
+                                .mapLabels("字段名", "字段值")
+                                .dependsOnAll(
+                                        DependencyBuilder.equals("method", "POST", "PUT", "PATCH", "DELETE"),
+                                        DependencyBuilder.equals("contentType", "application/x-www-form-urlencoded")
+                                )
+                                .build(),
 
                         // 自定义请求头（MAP 类型）
-                        createMapParam("headers", "自定义请求头",
-                                "额外的 HTTP 请求头，键值对格式",
-                                false, "{}",
-                                "请求头名称", "请求头值"),
+                        map("headers", "自定义请求头")
+                                .description("额外的 HTTP 请求头，键值对格式")
+                                .mapLabels("请求头名称", "请求头值")
+                                .build(),
 
                         // 超时时间
-                        createParam("timeout", "超时时间", "请求超时时间（毫秒）",
-                                ParamType.NUMBER, false, "30000", null, null,
-                                "30000"),
+                        number("timeout", "超时时间")
+                                .description("请求超时时间（毫秒）")
+                                .defaultValue("30000")
+                                .placeholder("30000")
+                                .build(),
 
                         // 是否跟随重定向
-                        createParam("followRedirects", "跟随重定向", "是否自动跟随 HTTP 重定向",
-                                ParamType.BOOLEAN, false, "true", null, null, null)
+                        bool("followRedirects", "跟随重定向")
+                                .description("是否自动跟随 HTTP 重定向")
+                                .defaultValue("true")
+                                .build()
                 )
         );
     }
@@ -202,80 +208,6 @@ public class HttpProtocolClient implements ProtocolClient {
             log.error("HTTP request failed. url={}, duration={}ms", url, duration, e);
             return ClientResponse.failure("请求失败: " + e.getMessage(), duration);
         }
-    }
-
-    /**
-     * 创建普通参数描述
-     */
-    private ProtocolClientParamDescriptor createParam(String name, String label, String description,
-                                                       ParamType paramType, boolean required,
-                                                       String defaultValue, List<SelectOption> options,
-                                                       ParamDependency dependency, String placeholder) {
-        ProtocolClientParamDescriptor param = new ProtocolClientParamDescriptor();
-        param.setName(name);
-        param.setLabel(label);
-        param.setDescription(description);
-        param.setParamType(paramType);
-        param.setRequired(required);
-        param.setDefaultValue(defaultValue);
-        param.setOptions(options);
-        param.setDependency(dependency);
-        param.setPlaceholder(placeholder);
-        return param;
-    }
-
-    /**
-     * 创建 MAP 类型参数描述
-     */
-    private ProtocolClientParamDescriptor createMapParam(String name, String label, String description,
-                                                          boolean required, String defaultValue,
-                                                          String keyLabel, String valueLabel) {
-        ProtocolClientParamDescriptor param = new ProtocolClientParamDescriptor();
-        param.setName(name);
-        param.setLabel(label);
-        param.setDescription(description);
-        param.setParamType(ParamType.MAP);
-        param.setRequired(required);
-        param.setDefaultValue(defaultValue);
-        param.setKeyLabel(keyLabel);
-        param.setValueLabel(valueLabel);
-        param.setPlaceholder("{\"key\":\"value\"}");
-        return param;
-    }
-
-    /**
-     * 创建带依赖的 MAP 类型参数描述
-     */
-    private ProtocolClientParamDescriptor createMapParamWithDependency(String name, String label, String description,
-                                                                        boolean required, String defaultValue,
-                                                                        String keyLabel, String valueLabel,
-                                                                        ParamDependency dependency) {
-        ProtocolClientParamDescriptor param = createMapParam(name, label, description, required, defaultValue, keyLabel, valueLabel);
-        param.setDependency(dependency);
-        return param;
-    }
-
-    /**
-     * 创建参数依赖配置
-     */
-    private ParamDependency createDependency(String dependsOn, List<String> expectedValues,
-                                              ParamDependency.DependencyCondition condition) {
-        ParamDependency dependency = new ParamDependency();
-        dependency.setDependsOn(dependsOn);
-        dependency.setExpectedValues(expectedValues);
-        dependency.setCondition(condition);
-        return dependency;
-    }
-
-    /**
-     * 创建多依赖配置（支持 AND/OR 逻辑）
-     */
-    private ParamDependency createMultiDependency(ParamDependency.CombineLogic combineLogic,
-                                                   List<ParamDependency> dependencies) {
-        ParamDependency multiDependency = new ParamDependency();
-        multiDependency.setDependencies(dependencies);
-        multiDependency.setCombineLogic(combineLogic);
-        return multiDependency;
     }
 
     /**
