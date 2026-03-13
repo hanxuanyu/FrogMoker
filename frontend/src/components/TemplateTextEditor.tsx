@@ -1,6 +1,7 @@
 import { useState } from "react"
-import { FileText, Edit3 } from "lucide-react"
+import { FileText, Edit3, AlignLeft } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
 import {
   Select,
   SelectContent,
@@ -21,6 +22,7 @@ interface TemplateTextEditorProps {
   isDark: boolean
   templates?: Array<{ id: number; name: string; messageType: string }>
   onTemplateRender?: (templateId: number) => Promise<string>
+  onFormat?: (format: string, content: string) => Promise<string>
   label?: string
 }
 
@@ -31,10 +33,12 @@ export function TemplateTextEditor({
   isDark,
   templates,
   onTemplateRender,
+  onFormat,
 }: TemplateTextEditorProps) {
   const [mode, setMode] = useState<"manual" | "template">("manual")
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("")
   const [loading, setLoading] = useState(false)
+  const [formatting, setFormatting] = useState(false)
 
   // 过滤匹配格式的模板
   const filteredTemplates = templates?.filter((t) => t.messageType === format) || []
@@ -68,6 +72,20 @@ export function TemplateTextEditor({
     }
   }
 
+  const handleFormat = async () => {
+    if (!value || !value.trim() || !onFormat) return
+    setFormatting(true)
+    try {
+      const formatted = await onFormat(format, value)
+      onChange(formatted)
+      toast.success("格式化成功")
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "格式化失败")
+    } finally {
+      setFormatting(false)
+    }
+  }
+
   const placeholder =
     format === "JSON"
       ? '{\n  "key": "value"\n}'
@@ -92,8 +110,22 @@ export function TemplateTextEditor({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="manual" className="flex-1 mt-3 min-h-0">
-            <div className="h-full rounded-lg overflow-hidden border text-xs">
+          <TabsContent value="manual" className="flex-1 mt-3 min-h-0 flex flex-col">
+            {onFormat && (
+              <div className="flex justify-end mb-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  onClick={handleFormat}
+                  disabled={formatting || !value || !value.trim()}
+                >
+                  <AlignLeft className="size-3" />
+                  {formatting ? "格式化中..." : "格式化"}
+                </Button>
+              </div>
+            )}
+            <div className="flex-1 rounded-lg overflow-hidden border text-xs">
               <CodeMirror
                 value={value}
                 height="100%"
@@ -155,24 +187,40 @@ export function TemplateTextEditor({
           </TabsContent>
         </Tabs>
       ) : (
-        <div className="h-full rounded-lg overflow-hidden border text-xs">
-          <CodeMirror
-            value={value}
-            height="100%"
-            extensions={[format === "JSON" ? json() : xml(), EditorView.lineWrapping]}
-            theme={isDark ? "dark" : "light"}
-            placeholder={placeholder}
-            onChange={onChange}
-            basicSetup={{
-              lineNumbers: true,
-              foldGutter: true,
-              autocompletion: true,
-              bracketMatching: true,
-              closeBrackets: true,
-              indentOnInput: true,
-            }}
-            style={{ height: "100%" }}
-          />
+        <div className="h-full flex flex-col">
+          {onFormat && (
+            <div className="flex justify-end mb-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={handleFormat}
+                disabled={formatting || !value || !value.trim()}
+              >
+                <AlignLeft className="size-3" />
+                {formatting ? "格式化中..." : "格式化"}
+              </Button>
+            </div>
+          )}
+          <div className="flex-1 rounded-lg overflow-hidden border text-xs">
+            <CodeMirror
+              value={value}
+              height="100%"
+              extensions={[format === "JSON" ? json() : xml(), EditorView.lineWrapping]}
+              theme={isDark ? "dark" : "light"}
+              placeholder={placeholder}
+              onChange={onChange}
+              basicSetup={{
+                lineNumbers: true,
+                foldGutter: true,
+                autocompletion: true,
+                bracketMatching: true,
+                closeBrackets: true,
+                indentOnInput: true,
+              }}
+              style={{ height: "100%" }}
+            />
+          </div>
         </div>
       )}
     </div>

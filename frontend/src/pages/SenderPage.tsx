@@ -169,6 +169,11 @@ export function SenderPage() {
     return await templateApi.render(templateId)
   }
 
+  // 格式化内容
+  const handleFormat = async (format: string, content: string): Promise<string> => {
+    return await templateApi.format(format, content)
+  }
+
   // 渲染不同类型的参数输入组件
   const renderParamInput = (param: ProtocolClientParamDescriptor) => {
     const value = clientParams[param.name] || param.defaultValue || ""
@@ -202,6 +207,7 @@ export function SenderPage() {
             isDark={isDark}
             templates={templates}
             onTemplateRender={handleTemplateRender}
+            onFormat={handleFormat}
             label={param.label}
           />
         )
