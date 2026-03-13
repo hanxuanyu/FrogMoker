@@ -4,7 +4,7 @@ export interface Result<T> {
   data: T
 }
 
-export type MessageType = "JSON" | "XML"
+export type MessageType = "JSON" | "XML" | "MAP"
 
 export interface MessageTemplateSummary {
   id: number
@@ -48,11 +48,19 @@ export interface SaveMessageTemplateRequest {
   variables: TemplateVariableRequest[]
 }
 
-export type ParamType = "TEXT" | "BOOLEAN" | "SELECT"
+export type ParamType = "TEXT" | "TEXTAREA" | "BOOLEAN" | "SELECT" | "MAP" | "ARRAY" | "NUMBER"
 
 export interface SelectOption {
   value: string
   label: string
+}
+
+export interface ParamDependency {
+  dependsOn?: string
+  expectedValues?: string[]
+  condition?: "EQUALS" | "NOT_EQUALS" | "NOT_EMPTY" | "IS_EMPTY"
+  dependencies?: ParamDependency[]
+  combineLogic?: "AND" | "OR"
 }
 
 export interface VariableGeneratorParamDescriptor {
@@ -63,6 +71,8 @@ export interface VariableGeneratorParamDescriptor {
   required: boolean
   defaultValue: string
   options?: SelectOption[]
+  dependency?: ParamDependency
+  placeholder?: string
 }
 
 export interface VariableGeneratorDescriptor {
@@ -80,6 +90,11 @@ export interface ProtocolClientParamDescriptor {
   required: boolean
   defaultValue: string
   options?: SelectOption[]
+  dependency?: ParamDependency
+  placeholder?: string
+  keyLabel?: string
+  valueLabel?: string
+  itemLabel?: string
 }
 
 export interface ProtocolClientDescriptor {

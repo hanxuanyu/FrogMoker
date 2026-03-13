@@ -2,6 +2,14 @@ import { useCallback, useEffect, useState } from "react"
 import { useOutletContext } from "react-router-dom"
 import { toast } from "sonner"
 import { Plus, Pencil, Trash2, Eye, Loader2, RefreshCw, Play, ChevronDown, ChevronRight, Copy, Check } from "lucide-react"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -223,9 +231,43 @@ export function TemplatesPage() {
                   {/* 展开区域：预览内容 */}
                   {expanded && (
                     <div className="px-4 pb-4 border-t pt-3">
-                      <pre className="text-xs font-mono bg-muted rounded p-3 max-h-48 overflow-y-auto text-muted-foreground whitespace-pre-wrap break-all">
-                        {item.contentPreview}
-                      </pre>
+                      {item.messageType === "MAP" ? (
+                        (() => {
+                          try {
+                            const mapData = JSON.parse(item.contentPreview)
+                            return (
+                              <div className="rounded-lg border overflow-hidden">
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow>
+                                      <TableHead className="w-1/3">参数名</TableHead>
+                                      <TableHead>参数值</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {Object.entries(mapData).map(([key, value]) => (
+                                      <TableRow key={key}>
+                                        <TableCell className="font-mono text-xs">{key}</TableCell>
+                                        <TableCell className="font-mono text-xs text-muted-foreground">{String(value)}</TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            )
+                          } catch {
+                            return (
+                              <pre className="text-xs font-mono bg-muted rounded p-3 max-h-48 overflow-y-auto text-muted-foreground whitespace-pre-wrap break-all">
+                                {item.contentPreview}
+                              </pre>
+                            )
+                          }
+                        })()
+                      ) : (
+                        <pre className="text-xs font-mono bg-muted rounded p-3 max-h-48 overflow-y-auto text-muted-foreground whitespace-pre-wrap break-all">
+                          {item.contentPreview}
+                        </pre>
+                      )}
                       <p className="text-xs text-muted-foreground mt-2">
                         更新于 {new Date(item.updatedAt).toLocaleString("zh-CN")}
                       </p>
@@ -263,9 +305,43 @@ export function TemplatesPage() {
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">模板内容</p>
-              <pre className="text-xs font-mono bg-muted rounded-lg p-4 whitespace-pre-wrap break-all">
-                {previewItem?.contentPreview}
-              </pre>
+              {previewItem?.messageType === "MAP" ? (
+                (() => {
+                  try {
+                    const mapData = JSON.parse(previewItem.contentPreview)
+                    return (
+                      <div className="rounded-lg border overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-1/3">参数名</TableHead>
+                              <TableHead>参数值</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {Object.entries(mapData).map(([key, value]) => (
+                              <TableRow key={key}>
+                                <TableCell className="font-mono text-xs">{key}</TableCell>
+                                <TableCell className="font-mono text-xs text-muted-foreground">{String(value)}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )
+                  } catch {
+                    return (
+                      <pre className="text-xs font-mono bg-muted rounded-lg p-4 whitespace-pre-wrap break-all">
+                        {previewItem.contentPreview}
+                      </pre>
+                    )
+                  }
+                })()
+              ) : (
+                <pre className="text-xs font-mono bg-muted rounded-lg p-4 whitespace-pre-wrap break-all">
+                  {previewItem?.contentPreview}
+                </pre>
+              )}
             </div>
             <div className="min-h-[120px]">
               <div className="flex items-center justify-between mb-2">
@@ -287,9 +363,43 @@ export function TemplatesPage() {
                 )}
               </div>
               {renderedContent !== null ? (
-                <pre className="text-xs font-mono bg-muted rounded-lg p-4 whitespace-pre-wrap break-all text-green-600 dark:text-green-400 transition-opacity duration-200">
-                  {renderedContent}
-                </pre>
+                previewItem?.messageType === "MAP" ? (
+                  (() => {
+                    try {
+                      const mapData = JSON.parse(renderedContent)
+                      return (
+                        <div className="rounded-lg border overflow-hidden">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-1/3">参数名</TableHead>
+                                <TableHead>参数值</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {Object.entries(mapData).map(([key, value]) => (
+                                <TableRow key={key}>
+                                  <TableCell className="font-mono text-xs">{key}</TableCell>
+                                  <TableCell className="font-mono text-xs text-green-600 dark:text-green-400">{String(value)}</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )
+                    } catch {
+                      return (
+                        <pre className="text-xs font-mono bg-muted rounded-lg p-4 whitespace-pre-wrap break-all text-green-600 dark:text-green-400 transition-opacity duration-200">
+                          {renderedContent}
+                        </pre>
+                      )
+                    }
+                  })()
+                ) : (
+                  <pre className="text-xs font-mono bg-muted rounded-lg p-4 whitespace-pre-wrap break-all text-green-600 dark:text-green-400 transition-opacity duration-200">
+                    {renderedContent}
+                  </pre>
+                )
               ) : (
                 <div className="flex items-center justify-center h-24 text-xs text-muted-foreground bg-muted/50 rounded-lg border-2 border-dashed">
                   点击下方「渲染报文」按钮查看渲染结果

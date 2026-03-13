@@ -277,6 +277,101 @@ public class YamlMessageContentProcessor implements MessageContentProcessor {
 
 ---
 
+## 开发指南：新增协议客户端
+
+协议客户端负责通过特定协议发送报文，支持丰富的参数类型和参数联动机制。
+
+### 实现 `ProtocolClient` 接口
+
+在 `service/client/` 目录下新建客户端类：
+
+```java
+@Component
+public class CustomProtocolClient implements ProtocolClient {
+
+    @Override
+    public String getProtocol() {
+        return "CUSTOM";  // 协议标识，全局唯一
+    }
+
+    @Override
+    public ProtocolClientDescriptor getDescriptor() {
+        return new ProtocolClientDescriptor(
+            getProtocol(),
+            "自定义协议客户端",
+            "通过自定义协议发送报文",
+            Arrays.asList(
+                // 参数描述列表
+            )
+        );
+    }
+
+    @Override
+    public ClientResponse send(String message, Map<String, String> params) {
+        // 实现发送逻辑
+    }
+}
+```
+
+### 支持的参数类型
+
+| 类型 | 说明 | 前端展示 | 数据格式 |
+|------|------|---------|---------|
+| `TEXT` | 单行文本 | 输入框 | 字符串 |
+| `TEXTAREA` | 多行文本 | 文本域 | 字符串 |
+| `NUMBER` | 数字 | 数字输入框 | 字符串（需转换） |
+| `BOOLEAN` | 布尔值 | 开关 | "true" 或 "false" |
+| `SELECT` | 下拉选择 | 下拉框 | 选项值 |
+| `MAP` | 键值对映射 | 键值对编辑器 | JSON 字符串 |
+| `ARRAY` | 数组列表 | 列表编辑器 | JSON 字符串 |
+
+### 参数联动机制
+
+通过 `ParamDependency` 实现参数之间的依赖关系：
+
+```java
+// 创建参数依赖
+ParamDependency dependency = new ParamDependency();
+dependency.setDependsOn("method");  // 依赖的参数名
+dependency.setExpectedValues(Arrays.asList("POST", "PUT"));  // 期望值列表
+dependency.setCondition(ParamDependency.DependencyCondition.EQUALS);  // 条件类型
+
+// 应用到参数
+param.setDependency(dependency);
+```
+
+**依赖条件类型：**
+- `EQUALS`: 等于任一期望值时显示
+- `NOT_EQUALS`: 不等于任一期望值时显示
+- `NOT_EMPTY`: 依赖参数不为空时显示
+- `IS_EMPTY`: 依赖参数为空时显示
+
+### MAP 和 ARRAY 类型参数
+
+使用 `ParamParser` 工具类解析：
+
+```java
+// 解析 MAP 类型
+String headersJson = params.get("headers");
+Map<String, String> headers = ParamParser.parseMap(headersJson);
+
+// 解析 ARRAY 类型
+String itemsJson = params.get("items");
+List<String> items = ParamParser.parseArray(itemsJson);
+```
+
+前端会将 MAP 和 ARRAY 类型的参数自动转换为 JSON 字符串传递给后端。
+
+### 完整示例
+
+参考 `HttpProtocolClient` 的实现，它展示了如何：
+- 使用多种参数类型
+- 配置参数联动（Content-Type 仅在 POST/PUT 等方法时显示）
+- 处理 MAP 类型参数（请求头、查询参数）
+- 提供友好的参数标签和占位符
+
+---
+
 ## 本地开发
 
 ### 后端

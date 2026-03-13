@@ -36,10 +36,7 @@ public class MessageSenderService {
         log.info("Sending message. templateId={}, hasCustomContent={}, protocol={}",
                 templateId, customContent != null && !customContent.isEmpty(), protocol);
 
-        // 验证参数
-        if (templateId == null && (customContent == null || customContent.trim().isEmpty())) {
-            throw new BusinessException("必须提供模板ID或自定义报文内容");
-        }
+        // 验证协议类型
         if (protocol == null || protocol.isEmpty()) {
             throw new BusinessException("协议类型不能为空");
         }
@@ -50,14 +47,16 @@ public class MessageSenderService {
         // 验证必填参数
         validateClientParams(client.getDescriptor(), clientParams);
 
-        // 获取报文内容：优先使用模板，否则使用自定义内容
-        String messageContent;
+        // 获取报文内容：优先使用模板，否则使用自定义内容，如果都没有则使用空字符串
+        String messageContent = "";
         if (templateId != null) {
             messageContent = templateService.renderTemplate(templateId);
             log.debug("Template rendered for sending. templateId={}, messageLength={}", templateId, messageContent.length());
-        } else {
+        } else if (customContent != null && !customContent.trim().isEmpty()) {
             messageContent = customContent.trim();
             log.debug("Using custom content for sending. messageLength={}", messageContent.length());
+        } else {
+            log.debug("No message content provided, using empty string");
         }
 
         // 发送报文

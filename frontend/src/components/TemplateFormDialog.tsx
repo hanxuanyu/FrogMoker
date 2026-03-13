@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { VariableEditor } from "@/components/VariableEditor"
+import { MapEditor } from "@/components/MapEditor"
 import CodeMirror from "@uiw/react-codemirror"
 import { json } from "@codemirror/lang-json"
 import { xml } from "@codemirror/lang-xml"
@@ -227,6 +228,7 @@ export function TemplateFormDialog({ open, editTarget, onClose, onSaved }: Props
                   <SelectContent>
                     <SelectItem value="JSON">JSON</SelectItem>
                     <SelectItem value="XML">XML</SelectItem>
+                    <SelectItem value="MAP">MAP (键值对)</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
@@ -254,9 +256,11 @@ export function TemplateFormDialog({ open, editTarget, onClose, onSaved }: Props
                   报文内容 <span className="text-destructive normal-case font-normal">*</span>
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {messageType === "JSON"
+                  {messageType === "MAP"
                     ? "使用 {{variableName}} 作为变量占位符，例如 {{userId}}"
-                    : "使用 ${variableName} 作为变量占位符，例如 ${userId}"}
+                    : messageType === "JSON"
+                    ? "使用 {{variableName}} 作为变量占位符，例如 {{userId}}"
+                    : "使用 $" + "{variableName} 作为变量占位符，例如 $" + "{userId}"}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -292,26 +296,37 @@ export function TemplateFormDialog({ open, editTarget, onClose, onSaved }: Props
                 </Button>
               </div>
             </div>
-            <div className="rounded-md overflow-hidden border text-xs">
-              <CodeMirror
+            {messageType === "MAP" ? (
+              <MapEditor
                 value={content}
-                height="220px"
-                extensions={messageType === "JSON" ? [json()] : [xml()]}
-                theme={oneDark}
-                placeholder={messageType === "JSON" ? jsonPlaceholder : xmlPlaceholder}
-                onChange={(val) => setContent(val)}
-                basicSetup={{
-                  lineNumbers: true,
-                  foldGutter: true,
-                  autocompletion: true,
-                  bracketMatching: true,
-                  closeBrackets: true,
-                  indentOnInput: true,
-                }}
+                onChange={setContent}
+                keyLabel="参数名"
+                valueLabel="参数值"
               />
-            </div>
+            ) : (
+              <div className="rounded-md overflow-hidden border text-xs">
+                <CodeMirror
+                  value={content}
+                  height="220px"
+                  extensions={messageType === "JSON" ? [json()] : [xml()]}
+                  theme={oneDark}
+                  placeholder={messageType === "JSON" ? jsonPlaceholder : xmlPlaceholder}
+                  onChange={(val) => setContent(val)}
+                  basicSetup={{
+                    lineNumbers: true,
+                    foldGutter: true,
+                    autocompletion: true,
+                    bracketMatching: true,
+                    closeBrackets: true,
+                    indentOnInput: true,
+                  }}
+                />
+              </div>
+            )}
             <p className="text-xs text-muted-foreground">
-              输入报文内容后，点击「解析变量」可自动提取占位符并进入下方变量配置；点击「格式化」可美化报文格式
+              {messageType === "MAP"
+                ? "输入键值对后，点击「解析变量」可自动提取占位符并进入下方变量配置"
+                : "输入报文内容后，点击「解析变量」可自动提取占位符并进入下方变量配置；点击「格式化」可美化报文格式"}
             </p>
           </section>
 
