@@ -80,10 +80,10 @@ export function TemplatesPage() {
 
   const handleRender = async (id: number) => {
     setRendering(true)
-    setRenderedContent(null)
     try {
       const result = await templateApi.render(id)
       setRenderedContent(result)
+      toast.success("渲染完成")
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "渲染失败")
     } finally {
@@ -266,10 +266,10 @@ export function TemplatesPage() {
                 {previewItem?.contentPreview}
               </pre>
             </div>
-            {renderedContent !== null && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">渲染结果</p>
+            <div className="min-h-[120px]">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">渲染结果</p>
+                {renderedContent !== null && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -283,12 +283,18 @@ export function TemplatesPage() {
                     )}
                     {copied ? "已复制" : "复制"}
                   </Button>
-                </div>
-                <pre className="text-xs font-mono bg-muted rounded-lg p-4 whitespace-pre-wrap break-all text-green-600 dark:text-green-400">
+                )}
+              </div>
+              {renderedContent !== null ? (
+                <pre className="text-xs font-mono bg-muted rounded-lg p-4 whitespace-pre-wrap break-all text-green-600 dark:text-green-400 transition-opacity duration-200">
                   {renderedContent}
                 </pre>
-              </div>
-            )}
+              ) : (
+                <div className="flex items-center justify-center h-24 text-xs text-muted-foreground bg-muted/50 rounded-lg border-2 border-dashed">
+                  点击下方「渲染报文」按钮查看渲染结果
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex justify-end gap-2 px-6 py-4 border-t shrink-0 bg-muted/30">
             <Button
