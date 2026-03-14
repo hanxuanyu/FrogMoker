@@ -2,15 +2,19 @@ package com.hxuanyu.frogmoker.service.client;
 
 import com.hxuanyu.frogmoker.service.generator.SelectOption;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.LaxRedirectStrategy;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
 import static com.hxuanyu.frogmoker.service.client.ProtocolClientParamBuilder.*;
@@ -25,10 +29,31 @@ public class HttpProtocolClient implements ProtocolClient {
 
     private static final String PROTOCOL = "HTTP";
 
+    private final PoolingHttpClientConnectionManager connectionManager;
+    private final CloseableHttpClient httpClient;
+    private final CloseableHttpClient httpClientNoRedirect;
     private final RestTemplate restTemplate;
+    private final RestTemplate restTemplateNoRedirect;
 
     public HttpProtocolClient() {
-        this.restTemplate = new RestTemplate();
+        this.connectionManager = new PoolingHttpClientConnectionManager();
+        this.connectionManager.setMaxTotal(200);
+        this.connectionManager.setDefaultMaxPerRoute(50);
+
+        this.httpClient = HttpClients.custom()
+                .setConnectionManager(connectionManager)
+                .setConnectionManagerShared(true)
+                .setRedirectStrategy(new LaxRedirectStrategy())
+                .build();
+
+        this.httpClientNoRedirect = HttpClients.custom()
+                .setConnectionManager(connectionManager)
+                .setConnectionManagerShared(true)
+                .disableRedirectHandling()
+                .build();
+
+        this.restTemplate = new RestTemplate(new HttpComponentsClientHttpRequestFactory(httpClient));
+        this.restTemplateNoRedirect = new RestTemplate(new HttpComponentsClientHttpRequestFactory(httpClientNoRedirect));
     }
 
     @Override
@@ -112,13 +137,6 @@ public class HttpProtocolClient implements ProtocolClient {
                                 .mapLabels("请求头名称", "请求头值")
                                 .build(),
 
-                        // 超时时间
-                        number("timeout", "超时时间")
-                                .description("请求超时时间（毫秒）")
-                                .defaultValue("30000")
-                                .placeholder("30000")
-                                .build(),
-
                         // 是否跟随重定向
                         bool("followRedirects", "跟随重定向")
                                 .description("是否自动跟随 HTTP 重定向")
@@ -135,9 +153,12 @@ public class HttpProtocolClient implements ProtocolClient {
         String method = params.getOrDefault("method", "POST");
         String contentType = params.get("contentType");
         String body = params.getOrDefault("body", "");
+        boolean followRedirects = Boolean.parseBoolean(params.getOrDefault("followRedirects", "true"));
 
-        log.info("Sending HTTP request. url={}, method={}, contentType={}, bodyLength={}",
-                url, method, contentType, body.length());
+        log.info("Sending HTTP request. url={}, method={}, contentType={}, bodyLength={}, followRedirects={}",
+                url, method, contentType, body.length(), followRedirects);
+
+        RestTemplate template = followRedirects ? restTemplate : restTemplateNoRedirect;
 
         try {
             // 构建请求头
@@ -187,7 +208,7 @@ public class HttpProtocolClient implements ProtocolClient {
             }
 
             // 发送请求
-            ResponseEntity<String> response = restTemplate.exchange(
+            ResponseEntity<String> response = template.exchange(
                     url,
                     httpMethod,
                     requestEntity,
@@ -254,5 +275,22 @@ public class HttpProtocolClient implements ProtocolClient {
         }
 
         return sb.toString();
+    }
+
+    @Override
+    public void destroy() {
+        try {
+            httpClient.close();
+            httpClientNoRedirect.close();
+            log.info("HTTP clients closed");
+        } catch (Exception e) {
+            log.warn("Error closing HTTP clients", e);
+        }
+        try {
+            connectionManager.close();
+            log.info("HTTP connection manager closed");
+        } catch (Exception e) {
+            log.warn("Error closing HTTP connection manager", e);
+        }
     }
 }

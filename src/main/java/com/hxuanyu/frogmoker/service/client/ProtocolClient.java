@@ -26,4 +26,11 @@ public interface ProtocolClient {
      * @return 响应结果
      */
     ClientResponse send(String message, Map<String, String> params);
+
+    /**
+     * 销毁客户端，释放持有的资源（连接池、底层客户端实例等）。
+     * 默认为空实现，持有需要显式释放资源的客户端应覆盖此方法。
+     */
+    default void destroy() {
+    }
 }

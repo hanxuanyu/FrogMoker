@@ -26,6 +26,9 @@ public class WebSocketProtocolClient implements ProtocolClient {
 
     private static final String PROTOCOL = "WEBSOCKET";
 
+    // StandardWebSocketClient 本身无状态，仅作为连接工厂，复用同一实例即可
+    private final StandardWebSocketClient wsClient = new StandardWebSocketClient();
+
     @Override
     public String getProtocol() {
         return PROTOCOL;
@@ -111,9 +114,6 @@ public class WebSocketProtocolClient implements ProtocolClient {
 
         WebSocketSession session = null;
         try {
-            // 创建 WebSocket 客户端
-            StandardWebSocketClient client = new StandardWebSocketClient();
-
             // 创建响应收集器
             CompletableFuture<String> responseFuture = new CompletableFuture<>();
             StringBuilder responseBuilder = new StringBuilder();
@@ -152,7 +152,7 @@ public class WebSocketProtocolClient implements ProtocolClient {
 
             // 建立连接
             URI uri = new URI(url);
-            session = client.doHandshake(handler, null, uri).get(connectTimeout, TimeUnit.MILLISECONDS);
+            session = wsClient.doHandshake(handler, null, uri).get(connectTimeout, TimeUnit.MILLISECONDS);
 
             log.info("WebSocket connected. sessionId={}", session.getId());
 

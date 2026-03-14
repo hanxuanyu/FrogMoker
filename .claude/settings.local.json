@@ -11,7 +11,8 @@
       "Bash(cd C:/workspace/project/java/FrogMoker && mvn clean compile -DskipTests 2>&1 | tail -20)",
       "Bash(cd C:/workspace/project/java/FrogMoker && mvn clean compile -DskipTests 2>&1 | tail -15)",
       "WebFetch(domain:github.com)",
-      "Bash(mvn clean:*)"
+      "Bash(mvn clean:*)",
+      "Bash(mvn compile:*)"
     ]
   }
 }

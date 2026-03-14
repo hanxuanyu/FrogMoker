@@ -4,6 +4,7 @@ import com.hxuanyu.frogmoker.common.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PreDestroy;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -51,5 +52,17 @@ public class ProtocolClientRegistry {
 
     private String normalizeProtocol(String protocol) {
         return protocol == null ? null : protocol.toUpperCase(Locale.ROOT);
+    }
+
+    @PreDestroy
+    public void destroy() {
+        log.info("Destroying protocol client registry. totalClients={}", clientMap.size());
+        clientMap.values().forEach(client -> {
+            try {
+                client.destroy();
+            } catch (Exception e) {
+                log.warn("Error destroying client. protocol={}", client.getProtocol(), e);
+            }
+        });
     }
 }
