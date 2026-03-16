@@ -2,6 +2,8 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 import { Layout } from "@/components/Layout"
 import { TemplatesPage } from "@/pages/TemplatesPage"
 import { SenderPage } from "@/pages/SenderPage"
+import { ServerPage } from "@/pages/ServerPage"
+import { ServerDetailPage } from "@/pages/ServerDetailPage"
 
 export function App() {
   return (
@@ -11,6 +13,8 @@ export function App() {
           <Route index element={<Navigate to="/templates" replace />} />
           <Route path="templates" element={<TemplatesPage />} />
           <Route path="sender" element={<SenderPage />} />
+          <Route path="server" element={<ServerPage />} />
+          <Route path="server/:id" element={<ServerDetailPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

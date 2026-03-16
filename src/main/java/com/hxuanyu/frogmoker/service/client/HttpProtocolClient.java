@@ -1,6 +1,6 @@
 package com.hxuanyu.frogmoker.service.client;
 
-import com.hxuanyu.frogmoker.service.generator.SelectOption;
+import com.hxuanyu.frogmoker.service.common.SelectOption;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;

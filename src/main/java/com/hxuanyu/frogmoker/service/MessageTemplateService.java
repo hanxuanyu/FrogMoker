@@ -14,7 +14,7 @@ import com.hxuanyu.frogmoker.entity.TemplateVariable;
 import com.hxuanyu.frogmoker.mapper.MessageTemplateMapper;
 import com.hxuanyu.frogmoker.mapper.TemplateVariableMapper;
 import com.hxuanyu.frogmoker.service.generator.VariableGeneratorDescriptor;
-import com.hxuanyu.frogmoker.service.generator.VariableGeneratorParamDescriptor;
+import com.hxuanyu.frogmoker.service.common.ParamDescriptor;
 import com.hxuanyu.frogmoker.service.generator.VariableGeneratorRegistry;
 import com.hxuanyu.frogmoker.service.generator.VariableValueGenerator;
 import com.hxuanyu.frogmoker.service.processor.MessageContentProcessor;
@@ -193,7 +193,7 @@ public class MessageTemplateService {
                     ? new HashMap<String, String>()
                     : new HashMap<String, String>(request.getGeneratorParams());
 
-            for (VariableGeneratorParamDescriptor paramDescriptor : generator.getDescriptor().getParams()) {
+            for (ParamDescriptor paramDescriptor : generator.getDescriptor().getParams()) {
                 if (!paramDescriptor.isRequired()) {
                     continue;
                 }

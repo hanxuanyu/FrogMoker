@@ -6,7 +6,7 @@ import com.hxuanyu.frogmoker.dto.SendMessageResponse;
 import com.hxuanyu.frogmoker.service.client.ClientResponse;
 import com.hxuanyu.frogmoker.service.client.ProtocolClient;
 import com.hxuanyu.frogmoker.service.client.ProtocolClientDescriptor;
-import com.hxuanyu.frogmoker.service.client.ProtocolClientParamDescriptor;
+import com.hxuanyu.frogmoker.service.common.ParamDescriptor;
 import com.hxuanyu.frogmoker.service.client.ProtocolClientRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -83,7 +83,7 @@ public class MessageSenderService {
     }
 
     private void validateClientParams(ProtocolClientDescriptor descriptor, Map<String, String> params) {
-        for (ProtocolClientParamDescriptor paramDesc : descriptor.getParams()) {
+        for (ParamDescriptor paramDesc : descriptor.getParams()) {
             if (!paramDesc.isRequired()) {
                 continue;
             }

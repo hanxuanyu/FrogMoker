@@ -1,19 +1,17 @@
 package com.hxuanyu.frogmoker.service.generator;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+/**
+ * 下拉选项
+ * @deprecated 使用 {@link com.hxuanyu.frogmoker.service.common.SelectOption} 替代
+ */
+@Deprecated
+public class SelectOption extends com.hxuanyu.frogmoker.service.common.SelectOption {
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Schema(description = "下拉选项")
-public class SelectOption {
+    public SelectOption() {
+        super();
+    }
 
-    @Schema(description = "选项值")
-    private String value;
-
-    @Schema(description = "选项显示标签")
-    private String label;
+    public SelectOption(String value, String label) {
+        super(value, label);
+    }
 }

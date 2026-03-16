@@ -1,27 +1,24 @@
 package com.hxuanyu.frogmoker.service.generator;
 
+import com.hxuanyu.frogmoker.service.common.ComponentDescriptor;
+import com.hxuanyu.frogmoker.service.common.ParamDescriptor;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * 变量生成器描述信息
+ */
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 @Schema(description = "变量生成器描述信息")
-public class VariableGeneratorDescriptor {
+public class VariableGeneratorDescriptor extends ComponentDescriptor {
 
-    @Schema(description = "生成器类型标识，唯一键")
-    private String type;
-
-    @Schema(description = "生成器名称")
-    private String name;
-
-    @Schema(description = "生成器说明")
-    private String description;
-
-    @Schema(description = "支持的参数列表")
-    private List<VariableGeneratorParamDescriptor> params;
+    public VariableGeneratorDescriptor(String type, String name, String description, List<ParamDescriptor> params) {
+        super(type, name, description, params);
+    }
 }

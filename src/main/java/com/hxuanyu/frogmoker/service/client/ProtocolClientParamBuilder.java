@@ -1,201 +1,149 @@
 package com.hxuanyu.frogmoker.service.client;
 
-import com.hxuanyu.frogmoker.service.generator.ParamType;
-import com.hxuanyu.frogmoker.service.generator.SelectOption;
+import com.hxuanyu.frogmoker.service.common.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
  * 协议客户端参数描述构建器
  * 提供链式调用方式简化参数配置
+ * @deprecated 使用 {@link ParamDescriptorBuilder} 替代
  */
+@Deprecated
 public class ProtocolClientParamBuilder {
 
-    private final ProtocolClientParamDescriptor param;
+    private final ParamDescriptorBuilder delegate;
 
-    private ProtocolClientParamBuilder() {
-        this.param = new ProtocolClientParamDescriptor();
+    private ProtocolClientParamBuilder(ParamDescriptorBuilder delegate) {
+        this.delegate = delegate;
     }
 
     /**
      * 创建文本类型参数
      */
     public static ProtocolClientParamBuilder text(String name, String label) {
-        return new ProtocolClientParamBuilder()
-                .name(name)
-                .label(label)
-                .paramType(ParamType.TEXT);
+        return new ProtocolClientParamBuilder(ParamDescriptorBuilder.text(name, label));
     }
 
     /**
      * 创建多行文本类型参数
      */
     public static ProtocolClientParamBuilder textarea(String name, String label) {
-        return new ProtocolClientParamBuilder()
-                .name(name)
-                .label(label)
-                .paramType(ParamType.TEXTAREA);
+        return new ProtocolClientParamBuilder(ParamDescriptorBuilder.textarea(name, label));
     }
 
     /**
      * 创建数字类型参数
      */
     public static ProtocolClientParamBuilder number(String name, String label) {
-        return new ProtocolClientParamBuilder()
-                .name(name)
-                .label(label)
-                .paramType(ParamType.NUMBER);
+        return new ProtocolClientParamBuilder(ParamDescriptorBuilder.number(name, label));
     }
 
     /**
      * 创建布尔类型参数
      */
     public static ProtocolClientParamBuilder bool(String name, String label) {
-        return new ProtocolClientParamBuilder()
-                .name(name)
-                .label(label)
-                .paramType(ParamType.BOOLEAN);
+        return new ProtocolClientParamBuilder(ParamDescriptorBuilder.bool(name, label));
     }
 
     /**
      * 创建下拉选择类型参数
      */
     public static ProtocolClientParamBuilder select(String name, String label) {
-        return new ProtocolClientParamBuilder()
-                .name(name)
-                .label(label)
-                .paramType(ParamType.SELECT);
+        return new ProtocolClientParamBuilder(ParamDescriptorBuilder.select(name, label));
     }
 
     /**
      * 创建键值对映射类型参数
      */
     public static ProtocolClientParamBuilder map(String name, String label) {
-        return new ProtocolClientParamBuilder()
-                .name(name)
-                .label(label)
-                .paramType(ParamType.MAP)
-                .defaultValue("{}");
+        return new ProtocolClientParamBuilder(ParamDescriptorBuilder.map(name, label));
     }
 
     /**
      * 创建数组列表类型参数
      */
     public static ProtocolClientParamBuilder array(String name, String label) {
-        return new ProtocolClientParamBuilder()
-                .name(name)
-                .label(label)
-                .paramType(ParamType.ARRAY)
-                .defaultValue("[]");
+        return new ProtocolClientParamBuilder(ParamDescriptorBuilder.array(name, label));
     }
 
     public ProtocolClientParamBuilder name(String name) {
-        param.setName(name);
+        delegate.name(name);
         return this;
     }
 
     public ProtocolClientParamBuilder label(String label) {
-        param.setLabel(label);
+        delegate.label(label);
         return this;
     }
 
     public ProtocolClientParamBuilder description(String description) {
-        param.setDescription(description);
+        delegate.description(description);
         return this;
     }
 
     public ProtocolClientParamBuilder paramType(ParamType paramType) {
-        param.setParamType(paramType);
+        delegate.paramType(paramType);
         return this;
     }
 
     public ProtocolClientParamBuilder required(boolean required) {
-        param.setRequired(required);
+        delegate.required(required);
         return this;
     }
 
     public ProtocolClientParamBuilder required() {
-        return required(true);
+        delegate.required();
+        return this;
     }
 
     public ProtocolClientParamBuilder defaultValue(String defaultValue) {
-        param.setDefaultValue(defaultValue);
+        delegate.defaultValue(defaultValue);
         return this;
     }
 
     public ProtocolClientParamBuilder placeholder(String placeholder) {
-        param.setPlaceholder(placeholder);
+        delegate.placeholder(placeholder);
         return this;
     }
 
-    /**
-     * 设置下拉选项（用于 SELECT 类型）
-     */
     public ProtocolClientParamBuilder options(SelectOption... options) {
-        param.setOptions(Arrays.asList(options));
+        delegate.options(options);
         return this;
     }
 
-    /**
-     * 设置下拉选项（用于 SELECT 类型）
-     */
     public ProtocolClientParamBuilder options(List<SelectOption> options) {
-        param.setOptions(options);
+        delegate.options(options);
         return this;
     }
 
-    /**
-     * 快速创建下拉选项（值和标签相同）
-     */
     public ProtocolClientParamBuilder options(String... values) {
-        List<SelectOption> options = new ArrayList<>();
-        for (String value : values) {
-            options.add(new SelectOption(value, value));
-        }
-        param.setOptions(options);
+        delegate.options(values);
         return this;
     }
 
-    /**
-     * 设置 MAP 类型的键标签
-     */
     public ProtocolClientParamBuilder keyLabel(String keyLabel) {
-        param.setKeyLabel(keyLabel);
+        delegate.keyLabel(keyLabel);
         return this;
     }
 
-    /**
-     * 设置 MAP 类型的值标签
-     */
     public ProtocolClientParamBuilder valueLabel(String valueLabel) {
-        param.setValueLabel(valueLabel);
+        delegate.valueLabel(valueLabel);
         return this;
     }
 
-    /**
-     * 设置 MAP 类型的键值标签
-     */
     public ProtocolClientParamBuilder mapLabels(String keyLabel, String valueLabel) {
-        param.setKeyLabel(keyLabel);
-        param.setValueLabel(valueLabel);
+        delegate.mapLabels(keyLabel, valueLabel);
         return this;
     }
 
-    /**
-     * 设置 ARRAY 类型的项标签
-     */
     public ProtocolClientParamBuilder itemLabel(String itemLabel) {
-        param.setItemLabel(itemLabel);
+        delegate.itemLabel(itemLabel);
         return this;
     }
 
-    /**
-     * 设置参数依赖
-     */
-    public ProtocolClientParamBuilder dependency(ParamDependency dependency) {
-        param.setDependency(dependency);
+    public ProtocolClientParamBuilder dependency(com.hxuanyu.frogmoker.service.common.ParamDependency dependency) {
+        delegate.dependency(dependency);
         return this;
     }
 
@@ -203,53 +151,36 @@ public class ProtocolClientParamBuilder {
      * 创建单个依赖条件（EQUALS）
      */
     public ProtocolClientParamBuilder dependsOn(String paramName, String... expectedValues) {
-        ParamDependency dependency = new ParamDependency();
-        dependency.setDependsOn(paramName);
-        dependency.setExpectedValues(Arrays.asList(expectedValues));
-        dependency.setCondition(ParamDependency.DependencyCondition.EQUALS);
-        param.setDependency(dependency);
+        delegate.dependsOn(paramName, expectedValues);
         return this;
     }
 
     /**
      * 创建单个依赖条件（指定条件类型）
      */
-    public ProtocolClientParamBuilder dependsOn(String paramName, ParamDependency.DependencyCondition condition, String... expectedValues) {
-        ParamDependency dependency = new ParamDependency();
-        dependency.setDependsOn(paramName);
-        dependency.setExpectedValues(Arrays.asList(expectedValues));
-        dependency.setCondition(condition);
-        param.setDependency(dependency);
+    public ProtocolClientParamBuilder dependsOn(String paramName, com.hxuanyu.frogmoker.service.common.ParamDependency.DependencyCondition condition, String... expectedValues) {
+        delegate.dependsOn(paramName, condition, expectedValues);
         return this;
     }
 
     /**
      * 创建多依赖条件（AND 逻辑）
      */
-    public ProtocolClientParamBuilder dependsOnAll(ParamDependency... dependencies) {
-        ParamDependency multiDependency = new ParamDependency();
-        multiDependency.setDependencies(Arrays.asList(dependencies));
-        multiDependency.setCombineLogic(ParamDependency.CombineLogic.AND);
-        param.setDependency(multiDependency);
+    public ProtocolClientParamBuilder dependsOnAll(com.hxuanyu.frogmoker.service.common.ParamDependency... dependencies) {
+        delegate.dependsOnAll(dependencies);
         return this;
     }
 
     /**
      * 创建多依赖条件（OR 逻辑）
      */
-    public ProtocolClientParamBuilder dependsOnAny(ParamDependency... dependencies) {
-        ParamDependency multiDependency = new ParamDependency();
-        multiDependency.setDependencies(Arrays.asList(dependencies));
-        multiDependency.setCombineLogic(ParamDependency.CombineLogic.OR);
-        param.setDependency(multiDependency);
+    public ProtocolClientParamBuilder dependsOnAny(com.hxuanyu.frogmoker.service.common.ParamDependency... dependencies) {
+        delegate.dependsOnAny(dependencies);
         return this;
     }
 
-    /**
-     * 构建参数描述对象
-     */
-    public ProtocolClientParamDescriptor build() {
-        return param;
+    public ParamDescriptor build() {
+        return delegate.build();
     }
 
     /**
@@ -257,46 +188,20 @@ public class ProtocolClientParamBuilder {
      */
     public static class DependencyBuilder {
 
-        /**
-         * 创建 EQUALS 依赖条件
-         */
-        public static ParamDependency equals(String paramName, String... expectedValues) {
-            ParamDependency dependency = new ParamDependency();
-            dependency.setDependsOn(paramName);
-            dependency.setExpectedValues(Arrays.asList(expectedValues));
-            dependency.setCondition(ParamDependency.DependencyCondition.EQUALS);
-            return dependency;
+        public static com.hxuanyu.frogmoker.service.common.ParamDependency equals(String paramName, String... expectedValues) {
+            return ParamDescriptorBuilder.DependencyBuilder.equals(paramName, expectedValues);
         }
 
-        /**
-         * 创建 NOT_EQUALS 依赖条件
-         */
-        public static ParamDependency notEquals(String paramName, String... expectedValues) {
-            ParamDependency dependency = new ParamDependency();
-            dependency.setDependsOn(paramName);
-            dependency.setExpectedValues(Arrays.asList(expectedValues));
-            dependency.setCondition(ParamDependency.DependencyCondition.NOT_EQUALS);
-            return dependency;
+        public static com.hxuanyu.frogmoker.service.common.ParamDependency notEquals(String paramName, String... expectedValues) {
+            return ParamDescriptorBuilder.DependencyBuilder.notEquals(paramName, expectedValues);
         }
 
-        /**
-         * 创建 NOT_EMPTY 依赖条件
-         */
-        public static ParamDependency notEmpty(String paramName) {
-            ParamDependency dependency = new ParamDependency();
-            dependency.setDependsOn(paramName);
-            dependency.setCondition(ParamDependency.DependencyCondition.NOT_EMPTY);
-            return dependency;
+        public static com.hxuanyu.frogmoker.service.common.ParamDependency notEmpty(String paramName) {
+            return ParamDescriptorBuilder.DependencyBuilder.notEmpty(paramName);
         }
 
-        /**
-         * 创建 IS_EMPTY 依赖条件
-         */
-        public static ParamDependency isEmpty(String paramName) {
-            ParamDependency dependency = new ParamDependency();
-            dependency.setDependsOn(paramName);
-            dependency.setCondition(ParamDependency.DependencyCondition.IS_EMPTY);
-            return dependency;
+        public static com.hxuanyu.frogmoker.service.common.ParamDependency isEmpty(String paramName) {
+            return ParamDescriptorBuilder.DependencyBuilder.isEmpty(paramName);
         }
     }
 }

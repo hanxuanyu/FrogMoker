@@ -7,6 +7,16 @@ import type {
   ProtocolClientDescriptor,
   SendMessageRequest,
   SendMessageResponse,
+  ProtocolServerDescriptor,
+  ServerInstance,
+  CreateServerInstanceRequest,
+  UpdateServerInstanceRequest,
+  ServerStatusInfo,
+  MatchRule,
+  CreateMatchRuleRequest,
+  UpdateMatchRuleRequest,
+  RequestLog,
+  PageResult,
 } from "@/types"
 
 const http = axios.create({
@@ -62,4 +72,66 @@ export const senderApi = {
 
   send: (data: SendMessageRequest): Promise<SendMessageResponse> =>
     http.post("/sender/send", data),
+}
+
+export const serverApi = {
+  listProtocols: (): Promise<ProtocolServerDescriptor[]> =>
+    http.get("/server/protocols"),
+
+  listInstances: (): Promise<ServerInstance[]> =>
+    http.get("/server/instances"),
+
+  getInstance: (id: number): Promise<ServerInstance> =>
+    http.get(`/server/instances/${id}`),
+
+  createInstance: (data: CreateServerInstanceRequest): Promise<ServerInstance> =>
+    http.post("/server/instances", data),
+
+  updateInstance: (id: number, data: UpdateServerInstanceRequest): Promise<ServerInstance> =>
+    http.put(`/server/instances/${id}`, data),
+
+  deleteInstance: (id: number): Promise<void> =>
+    http.delete(`/server/instances/${id}`),
+
+  startInstance: (id: number): Promise<void> =>
+    http.post(`/server/instances/${id}/start`),
+
+  stopInstance: (id: number): Promise<void> =>
+    http.post(`/server/instances/${id}/stop`),
+
+  restartInstance: (id: number): Promise<void> =>
+    http.post(`/server/instances/${id}/restart`),
+
+  getStatus: (id: number): Promise<ServerStatusInfo> =>
+    http.get(`/server/instances/${id}/status`),
+
+  listRules: (instanceId: number): Promise<MatchRule[]> =>
+    http.get(`/server/instances/${instanceId}/rules`),
+
+  getRule: (ruleId: number): Promise<MatchRule> =>
+    http.get(`/server/rules/${ruleId}`),
+
+  createRule: (instanceId: number, data: CreateMatchRuleRequest): Promise<MatchRule> =>
+    http.post(`/server/instances/${instanceId}/rules`, data),
+
+  updateRule: (ruleId: number, data: UpdateMatchRuleRequest): Promise<MatchRule> =>
+    http.put(`/server/rules/${ruleId}`, data),
+
+  deleteRule: (ruleId: number): Promise<void> =>
+    http.delete(`/server/rules/${ruleId}`),
+
+  toggleRule: (ruleId: number, enabled: boolean): Promise<void> =>
+    http.put(`/server/rules/${ruleId}/toggle`, null, { params: { enabled } }),
+
+  updatePriority: (ruleId: number, priority: number): Promise<void> =>
+    http.put(`/server/rules/${ruleId}/priority`, { priority }),
+
+  listLogs: (instanceId: number, page: number, size: number): Promise<PageResult<RequestLog>> =>
+    http.get(`/server/instances/${instanceId}/logs`, { params: { page, size } }),
+
+  clearLogs: (instanceId: number): Promise<void> =>
+    http.delete(`/server/instances/${instanceId}/logs`),
+
+  getLog: (logId: number): Promise<RequestLog> =>
+    http.get(`/server/logs/${logId}`),
 }

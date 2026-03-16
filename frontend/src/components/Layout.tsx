@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { FileText, Send, Menu, HelpCircle } from "lucide-react"
+import { FileText, Send, Server, Menu, HelpCircle } from "lucide-react"
 import { NavLink, Outlet, useLocation } from "react-router-dom"
 import { Toaster } from "@/components/ui/sonner"
 import { Button } from "@/components/ui/button"
@@ -24,6 +24,12 @@ const navItems = [
     label: "报文发送",
     icon: Send,
     description: "选择模板和协议，配置参数后发送报文"
+  },
+  {
+    to: "/server",
+    label: "服务端管理",
+    icon: Server,
+    description: "管理模拟服务端实例，支持请求匹配和响应配置"
   },
 ]
 

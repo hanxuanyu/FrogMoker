@@ -1,7 +1,9 @@
 package com.hxuanyu.frogmoker.service.client;
 
-import lombok.AllArgsConstructor;
+import com.hxuanyu.frogmoker.service.common.ComponentDescriptor;
+import com.hxuanyu.frogmoker.service.common.ParamDescriptor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
@@ -11,26 +13,24 @@ import java.util.List;
  */
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
-public class ProtocolClientDescriptor {
+@EqualsAndHashCode(callSuper = true)
+public class ProtocolClientDescriptor extends ComponentDescriptor {
+
+    public ProtocolClientDescriptor(String protocol, String name, String description, List<ParamDescriptor> params) {
+        super(protocol, name, description, params);
+    }
 
     /**
-     * 协议类型（如 HTTP）
+     * 获取协议类型（兼容旧代码）
      */
-    private String protocol;
+    public String getProtocol() {
+        return getType();
+    }
 
     /**
-     * 协议名称（如 HTTP 客户端）
+     * 设置协议类型（兼容旧代码）
      */
-    private String name;
-
-    /**
-     * 协议说明
-     */
-    private String description;
-
-    /**
-     * 客户端参数描述列表
-     */
-    private List<ProtocolClientParamDescriptor> params;
+    public void setProtocol(String protocol) {
+        setType(protocol);
+    }
 }

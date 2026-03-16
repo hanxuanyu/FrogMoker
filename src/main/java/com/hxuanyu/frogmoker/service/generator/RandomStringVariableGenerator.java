@@ -31,9 +31,9 @@ public class RandomStringVariableGenerator implements VariableValueGenerator {
                 Arrays.asList(
                         VariableGeneratorParamDescriptor.text("length", "长度", "生成字符串的长度，默认为 8", false, "8"),
                         VariableGeneratorParamDescriptor.select("charset", "字符集", "选择生成字符串所使用的字符集", false, "alphanumeric",
-                                new SelectOption("alpha", "纯字母"),
-                                new SelectOption("numeric", "纯数字"),
-                                new SelectOption("alphanumeric", "字母+数字")
+                                new com.hxuanyu.frogmoker.service.common.SelectOption("alpha", "纯字母"),
+                                new com.hxuanyu.frogmoker.service.common.SelectOption("numeric", "纯数字"),
+                                new com.hxuanyu.frogmoker.service.common.SelectOption("alphanumeric", "字母+数字")
                         ),
                         VariableGeneratorParamDescriptor.bool("uppercase", "全部大写", "是否将生成的字符串全部转换为大写", false)
                 )
