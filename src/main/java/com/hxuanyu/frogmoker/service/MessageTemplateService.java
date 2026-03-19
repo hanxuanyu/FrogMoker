@@ -24,10 +24,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -52,8 +55,10 @@ public class MessageTemplateService {
         MessageTemplate template = new MessageTemplate();
         template.setName(request.getName());
         template.setDescription(request.getDescription());
+        template.setGroupName(normalizeGroupName(request.getGroupName()));
         template.setMessageType(messageType);
         template.setContent(request.getContent());
+        template.setTagsJson(toJsonArray(normalizeTags(request.getTags())));
         templateMapper.insert(template);
         log.debug("Template entity persisted. id={}, name={}", template.getId(), template.getName());
 
@@ -73,8 +78,10 @@ public class MessageTemplateService {
 
         template.setName(request.getName());
         template.setDescription(request.getDescription());
+        template.setGroupName(normalizeGroupName(request.getGroupName()));
         template.setMessageType(messageType);
         template.setContent(request.getContent());
+        template.setTagsJson(toJsonArray(normalizeTags(request.getTags())));
         templateMapper.updateById(template);
         log.debug("Template entity updated. id={}", id);
 
@@ -101,9 +108,11 @@ public class MessageTemplateService {
 
     public List<MessageTemplateSummaryResponse> listTemplates() {
         List<MessageTemplate> templates = templateMapper.selectList(null);
+        Map<Long, Integer> variableCountMap = variableMapper.selectList(null).stream()
+                .collect(Collectors.groupingBy(TemplateVariable::getTemplateId, Collectors.collectingAndThen(Collectors.counting(), Long::intValue)));
         log.debug("Loaded template list. count={}", templates.size());
         return templates.stream()
-                .map(this::toSummary)
+                .map(template -> toSummary(template, variableCountMap.getOrDefault(template.getId(), 0)))
                 .collect(Collectors.toList());
     }
 
@@ -227,16 +236,19 @@ public class MessageTemplateService {
         return template;
     }
 
-    private MessageTemplateSummaryResponse toSummary(MessageTemplate template) {
+    private MessageTemplateSummaryResponse toSummary(MessageTemplate template, int variableCount) {
         MessageTemplateSummaryResponse response = new MessageTemplateSummaryResponse();
         response.setId(template.getId());
         response.setName(template.getName());
         response.setDescription(template.getDescription());
+        response.setGroupName(normalizeGroupName(template.getGroupName()));
         response.setMessageType(template.getMessageType());
         String content = template.getContent();
         response.setContentPreview(content != null && content.length() > 200
                 ? content.substring(0, 200) + "..."
                 : content);
+        response.setTags(parseTags(template.getTagsJson()));
+        response.setVariableCount(variableCount);
         response.setCreatedAt(template.getCreatedAt());
         response.setUpdatedAt(template.getUpdatedAt());
         return response;
@@ -247,8 +259,10 @@ public class MessageTemplateService {
         response.setId(template.getId());
         response.setName(template.getName());
         response.setDescription(template.getDescription());
+        response.setGroupName(normalizeGroupName(template.getGroupName()));
         response.setMessageType(template.getMessageType());
         response.setContent(template.getContent());
+        response.setTags(parseTags(template.getTagsJson()));
         response.setCreatedAt(template.getCreatedAt());
         response.setUpdatedAt(template.getUpdatedAt());
         response.setVariables(variables.stream().map(this::toVariableResponse).collect(Collectors.toList()));
@@ -289,8 +303,57 @@ public class MessageTemplateService {
         }
     }
 
+    private String toJsonArray(List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(values);
+        } catch (Exception e) {
+            log.warn("Failed to serialize template tags. values={}", values, e);
+            return null;
+        }
+    }
+
+    private List<String> parseTags(String json) {
+        if (json == null || json.isEmpty()) {
+            return new ArrayList<String>();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<String>>() {
+            });
+        } catch (Exception e) {
+            log.warn("Failed to parse template tags JSON. payloadPreview={}", summarize(json), e);
+            return new ArrayList<String>();
+        }
+    }
+
     private String normalizeMessageType(String messageType) {
         return messageType == null ? null : messageType.toUpperCase(Locale.ROOT);
+    }
+
+    private String normalizeGroupName(String groupName) {
+        if (groupName == null || groupName.trim().isEmpty()) {
+            return "未分组";
+        }
+        return groupName.trim();
+    }
+
+    private List<String> normalizeTags(List<String> tags) {
+        if (tags == null || tags.isEmpty()) {
+            return new ArrayList<String>();
+        }
+        Set<String> normalized = new LinkedHashSet<String>();
+        for (String tag : tags) {
+            if (tag == null) {
+                continue;
+            }
+            String trimmed = tag.trim();
+            if (!trimmed.isEmpty()) {
+                normalized.add(trimmed);
+            }
+        }
+        return new ArrayList<String>(normalized);
     }
 
     private String normalizeGeneratorType(String generatorType) {

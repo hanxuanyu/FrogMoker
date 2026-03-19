@@ -2,11 +2,14 @@ CREATE TABLE IF NOT EXISTS message_template (
     id BIGINT NOT NULL AUTO_INCREMENT,
     name VARCHAR(128) NOT NULL,
     description VARCHAR(512),
+    group_name VARCHAR(128) NOT NULL,
     message_type VARCHAR(16) NOT NULL,
     content LONGTEXT NOT NULL,
+    tags LONGTEXT,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    KEY idx_message_template_group_name (group_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS template_variable (

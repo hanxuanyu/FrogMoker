@@ -19,11 +19,17 @@ public class MessageTemplateDetailResponse {
     @Schema(description = "模板描述")
     private String description;
 
+    @Schema(description = "模板分组")
+    private String groupName;
+
     @Schema(description = "报文类型：XML / JSON")
     private String messageType;
 
     @Schema(description = "报文内容（含占位符）")
     private String content;
+
+    @Schema(description = "模板标签")
+    private List<String> tags;
 
     @Schema(description = "变量列表")
     private List<TemplateVariableResponse> variables;

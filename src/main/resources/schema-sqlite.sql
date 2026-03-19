@@ -3,11 +3,15 @@ CREATE TABLE IF NOT EXISTS message_template
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     name         VARCHAR(128)  NOT NULL,
     description  VARCHAR(512),
+    group_name   VARCHAR(128)  NOT NULL,
     message_type VARCHAR(16)   NOT NULL,
     content      TEXT          NOT NULL,
+    tags         TEXT,
     created_at   DATETIME      NOT NULL DEFAULT (datetime('now', 'localtime')),
     updated_at   DATETIME      NOT NULL DEFAULT (datetime('now', 'localtime'))
 );
+
+CREATE INDEX IF NOT EXISTS idx_message_template_group_name ON message_template(group_name);
 
 CREATE TABLE IF NOT EXISTS template_variable
 (

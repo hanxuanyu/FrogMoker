@@ -18,6 +18,9 @@ public class SaveMessageTemplateRequest {
     @Schema(description = "模板描述")
     private String description;
 
+    @Schema(description = "模板分组")
+    private String groupName;
+
     @NotBlank(message = "报文类型不能为空")
     @Schema(description = "报文类型：XML / JSON")
     private String messageType;
@@ -29,4 +32,7 @@ public class SaveMessageTemplateRequest {
     @Valid
     @Schema(description = "变量列表")
     private List<TemplateVariableRequest> variables;
+
+    @Schema(description = "模板标签")
+    private List<String> tags;
 }

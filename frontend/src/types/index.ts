@@ -10,8 +10,11 @@ export interface MessageTemplateSummary {
   id: number
   name: string
   description: string
+  groupName: string
   messageType: MessageType
   contentPreview: string
+  tags: string[]
+  variableCount: number
   createdAt: string
   updatedAt: string
 }
@@ -27,8 +30,10 @@ export interface MessageTemplateDetail {
   id: number
   name: string
   description: string
+  groupName: string
   messageType: MessageType
   content: string
+  tags: string[]
   variables: TemplateVariableResponse[]
   createdAt: string
   updatedAt: string
@@ -43,9 +48,11 @@ export interface TemplateVariableRequest {
 export interface SaveMessageTemplateRequest {
   name: string
   description?: string
+  groupName?: string
   messageType: MessageType
   content: string
   variables: TemplateVariableRequest[]
+  tags?: string[]
 }
 
 export type ParamType = "TEXT" | "TEXTAREA" | "BOOLEAN" | "SELECT" | "MAP" | "ARRAY" | "NUMBER"
