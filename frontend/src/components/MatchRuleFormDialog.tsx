@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
-import { Loader2, Filter, Reply, GitBranch, Clock3, FileCode2 } from "lucide-react"
+import { Loader2, Filter, Reply, GitBranch, FileCode2 } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -27,6 +27,9 @@ import type {
   ResponseConfig,
   ConditionType,
   MatchOperator,
+  ParamDescriptor,
+  ParamDependency,
+  ProtocolServerDescriptor,
 } from "@/types"
 
 interface MatchRuleFormDialogProps {
@@ -34,6 +37,7 @@ interface MatchRuleFormDialogProps {
   onOpenChange: (open: boolean) => void
   instanceId: number
   editTarget: MatchRule | null
+  protocolDescriptor?: ProtocolServerDescriptor | null
   onSuccess: () => void
 }
 
@@ -60,6 +64,7 @@ export function MatchRuleFormDialog({
   onOpenChange,
   instanceId,
   editTarget,
+  protocolDescriptor,
   onSuccess,
 }: MatchRuleFormDialogProps) {
   const [submitting, setSubmitting] = useState(false)
@@ -73,10 +78,7 @@ export function MatchRuleFormDialog({
   const [operator, setOperator] = useState<MatchOperator>("EQUALS")
   const [value, setValue] = useState("")
 
-  const [statusCode, setStatusCode] = useState("200")
-  const [headers, setHeaders] = useState("{}")
-  const [body, setBody] = useState("")
-  const [delay, setDelay] = useState("")
+  const [responseValues, setResponseValues] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (!open) {
@@ -102,16 +104,9 @@ export function MatchRuleFormDialog({
       }
 
       try {
-        const response: ResponseConfig = JSON.parse(editTarget.response)
-        setStatusCode(String(response.statusCode))
-        setHeaders(JSON.stringify(response.headers || {}, null, 2))
-        setBody(response.body || "")
-        setDelay(response.delay ? String(response.delay) : "")
+        setResponseValues(JSON.parse(editTarget.response))
       } catch {
-        setStatusCode("200")
-        setHeaders("{}")
-        setBody("")
-        setDelay("")
+        setResponseValues({})
       }
     } else {
       setName("")
@@ -121,12 +116,129 @@ export function MatchRuleFormDialog({
       setField("path")
       setOperator("EQUALS")
       setValue("")
-      setStatusCode("200")
-      setHeaders("{\n  \"Content-Type\": \"application/json\"\n}")
-      setBody('{\n  "message": "OK"\n}')
-      setDelay("")
+      const defaults: Record<string, string> = {}
+      ;(protocolDescriptor?.responseParams || []).forEach((param) => {
+        if (param.defaultValue) {
+          defaults[param.name] = param.defaultValue
+        }
+      })
+      setResponseValues(defaults)
     }
-  }, [open, editTarget])
+  }, [open, editTarget, protocolDescriptor])
+
+  const responseParams = protocolDescriptor?.responseParams || []
+
+  const isResponseParamVisible = (param: ParamDescriptor): boolean => {
+    if (!param.dependency) return true
+    const dep = param.dependency
+    if (dep.dependencies && dep.dependencies.length > 0) {
+      const results = dep.dependencies.map((subDep) => checkResponseDependency(subDep))
+      return dep.combineLogic === "AND" ? results.every(Boolean) : results.some(Boolean)
+    }
+    return checkResponseDependency(dep)
+  }
+
+  const checkResponseDependency = (dep: ParamDependency): boolean => {
+    if (!dep.dependsOn) return true
+    const currentValue = responseValues[dep.dependsOn]
+    switch (dep.condition) {
+      case "EQUALS":
+        return dep.expectedValues?.includes(currentValue) || false
+      case "NOT_EQUALS":
+        return !dep.expectedValues?.includes(currentValue)
+      case "NOT_EMPTY":
+        return !!currentValue && currentValue.trim() !== ""
+      case "IS_EMPTY":
+        return !currentValue || currentValue.trim() === ""
+      default:
+        return true
+    }
+  }
+
+  const renderResponseInput = (param: ParamDescriptor) => {
+    const currentValue = responseValues[param.name] || param.defaultValue || ""
+
+    switch (param.paramType) {
+      case "TEXT":
+        return (
+          <Input
+            value={currentValue}
+            onChange={(e) => setResponseValues({ ...responseValues, [param.name]: e.target.value })}
+            placeholder={param.placeholder || param.description}
+          />
+        )
+      case "TEXTAREA":
+        return (
+          <Textarea
+            value={currentValue}
+            onChange={(e) => setResponseValues({ ...responseValues, [param.name]: e.target.value })}
+            placeholder={param.placeholder || param.description}
+            rows={8}
+            className="font-mono text-sm"
+          />
+        )
+      case "NUMBER":
+        return (
+          <Input
+            type="number"
+            value={currentValue}
+            onChange={(e) => setResponseValues({ ...responseValues, [param.name]: e.target.value })}
+            placeholder={param.placeholder || param.description}
+          />
+        )
+      case "BOOLEAN":
+        return (
+          <div className="flex items-center gap-3 rounded-lg border bg-muted/20 px-3 py-2">
+            <input
+              type="checkbox"
+              checked={currentValue === "true"}
+              onChange={(e) =>
+                setResponseValues({ ...responseValues, [param.name]: String(e.target.checked) })
+              }
+            />
+            <span className="text-sm text-muted-foreground">
+              {currentValue === "true" ? "已启用" : "未启用"}
+            </span>
+          </div>
+        )
+      case "SELECT":
+        return (
+          <Select
+            value={currentValue}
+            onValueChange={(value) => setResponseValues({ ...responseValues, [param.name]: value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={param.placeholder || param.description} />
+            </SelectTrigger>
+            <SelectContent>
+              {param.options?.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )
+      case "MAP":
+        return (
+          <Textarea
+            value={currentValue}
+            onChange={(e) => setResponseValues({ ...responseValues, [param.name]: e.target.value })}
+            placeholder={param.placeholder || param.description || "{}"}
+            rows={4}
+            className="font-mono text-sm"
+          />
+        )
+      default:
+        return (
+          <Input
+            value={currentValue}
+            onChange={(e) => setResponseValues({ ...responseValues, [param.name]: e.target.value })}
+            placeholder={param.placeholder || param.description}
+          />
+        )
+    }
+  }
 
   const handleSubmit = async () => {
     if (!name.trim()) {
@@ -145,20 +257,20 @@ export function MatchRuleFormDialog({
       value: conditionType === "SIMPLE" ? value : undefined,
     }
 
-    let parsedHeaders = {}
-    try {
-      parsedHeaders = JSON.parse(headers)
-    } catch {
-      toast.error("响应头格式错误，请输入有效的 JSON")
-      return
+    for (const param of responseParams.filter(isResponseParamVisible)) {
+      if (!param.required) {
+        continue
+      }
+      const currentValue = responseValues[param.name]
+      if (!currentValue || !currentValue.trim()) {
+        toast.error(`请填写响应参数：${param.label}`)
+        return
+      }
     }
 
-    const response: ResponseConfig = {
-      statusCode: Number(statusCode),
-      headers: parsedHeaders,
-      body,
-      delay: delay ? Number(delay) : undefined,
-    }
+    const response: ResponseConfig = Object.fromEntries(
+      Object.entries(responseValues).filter(([, currentValue]) => currentValue !== undefined && currentValue !== ""),
+    )
 
     setSubmitting(true)
     try {
@@ -221,9 +333,9 @@ export function MatchRuleFormDialog({
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="rule-priority">
-                  <span className="inline-flex items-center gap-1">
+                <div className="space-y-1.5">
+                  <Label htmlFor="rule-priority">
+                    <span className="inline-flex items-center gap-1">
                     <GitBranch className="size-3.5" />
                     优先级
                   </span>
@@ -335,70 +447,40 @@ export function MatchRuleFormDialog({
             <div className="rounded-xl border bg-card p-4 space-y-4">
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="statusCode">HTTP 状态码</Label>
-                  <Input
-                    id="statusCode"
-                    type="number"
-                    value={statusCode}
-                    onChange={(e) => setStatusCode(e.target.value)}
-                    placeholder="200"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="delay">
-                    <span className="inline-flex items-center gap-1">
-                      <Clock3 className="size-3.5" />
-                      延迟时间（毫秒）
-                    </span>
-                  </Label>
-                  <Input
-                    id="delay"
-                    type="number"
-                    value={delay}
-                    onChange={(e) => setDelay(e.target.value)}
-                    placeholder="0"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
                   <Label>预览标签</Label>
                   <div className="flex flex-wrap gap-2 pt-1">
-                    <Badge variant="secondary">{statusCode || 200}</Badge>
+                    {responseValues.statusCode && <Badge variant="secondary">{responseValues.statusCode}</Badge>}
                     <Badge variant="outline">{operator}</Badge>
                     <Badge variant="outline">优先级 {priority || 0}</Badge>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="headers">
-                  <span className="inline-flex items-center gap-1">
-                    <FileCode2 className="size-3.5" />
-                    响应头（JSON）
-                  </span>
-                </Label>
-                <Textarea
-                  id="headers"
-                  value={headers}
-                  onChange={(e) => setHeaders(e.target.value)}
-                  placeholder='{"Content-Type": "application/json"}'
-                  rows={4}
-                  className="font-mono text-sm"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="body">响应体</Label>
-                <Textarea
-                  id="body"
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
-                  placeholder='{"message": "OK"}'
-                  rows={8}
-                  className="font-mono text-sm"
-                />
-              </div>
+              {responseParams.length > 0 ? (
+                responseParams.filter(isResponseParamVisible).map((param) => (
+                  <div key={param.name} className="space-y-1.5">
+                    <Label htmlFor={`response-${param.name}`}>
+                      {param.paramType === "MAP" ? (
+                        <span className="inline-flex items-center gap-1">
+                          <FileCode2 className="size-3.5" />
+                          {param.label}
+                        </span>
+                      ) : (
+                        param.label
+                      )}
+                      {param.required && <span className="text-destructive ml-1">*</span>}
+                    </Label>
+                    {renderResponseInput(param)}
+                    {param.description && (
+                      <p className="text-xs text-muted-foreground">{param.description}</p>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-xl border border-dashed bg-muted/20 px-4 py-8 text-sm text-center text-muted-foreground">
+                  当前协议未声明响应参数描述
+                </div>
+              )}
             </div>
           </section>
         </div>

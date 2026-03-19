@@ -1,12 +1,12 @@
 package com.hxuanyu.frogmoker.dto;
 
 import com.hxuanyu.frogmoker.service.server.MatchCondition;
-import com.hxuanyu.frogmoker.service.server.ResponseConfig;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.util.Map;
 
 /**
  * 更新匹配规则请求
@@ -31,5 +31,5 @@ public class UpdateMatchRuleRequest {
 
     @NotNull(message = "响应配置不能为空")
     @Schema(description = "响应配置")
-    private ResponseConfig response;
+    private Map<String, String> response;
 }

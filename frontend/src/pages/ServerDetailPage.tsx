@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { MatchRuleFormDialog } from "@/components/MatchRuleFormDialog"
 import { serverApi } from "@/api"
-import type { ServerInstance, MatchRule, RequestLog, PageResult } from "@/types"
+import type { ServerInstance, MatchRule, RequestLog, PageResult, ProtocolServerDescriptor } from "@/types"
 
 function parseParams(raw: string): Record<string, string> {
   try {
@@ -70,15 +70,6 @@ function summarizeCondition(condition: string) {
   }
 }
 
-function summarizeResponse(response: string) {
-  try {
-    const parsed = JSON.parse(response)
-    return `HTTP ${parsed.statusCode || 200}${parsed.delay ? ` · ${parsed.delay}ms` : ""}`
-  } catch {
-    return "响应解析失败"
-  }
-}
-
 export function ServerDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -89,6 +80,7 @@ export function ServerDetailPage() {
   const [instance, setInstance] = useState<ServerInstance | null>(null)
   const [rules, setRules] = useState<MatchRule[]>([])
   const [logs, setLogs] = useState<PageResult<RequestLog> | null>(null)
+  const [protocols, setProtocols] = useState<ProtocolServerDescriptor[]>([])
   const [loading, setLoading] = useState(false)
   const [actioningId, setActioningId] = useState<number | null>(null)
   const [ruleFormOpen, setRuleFormOpen] = useState(false)
@@ -132,10 +124,19 @@ export function ServerDetailPage() {
     [id],
   )
 
+  const fetchProtocols = useCallback(async () => {
+    try {
+      const data = await serverApi.listProtocols()
+      setProtocols(data)
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "加载协议描述失败")
+    }
+  }, [])
+
   useEffect(() => {
     setLoading(true)
-    Promise.all([fetchInstance(), fetchRules(), fetchLogs()]).finally(() => setLoading(false))
-  }, [fetchInstance, fetchRules, fetchLogs])
+    Promise.all([fetchInstance(), fetchRules(), fetchLogs(), fetchProtocols()]).finally(() => setLoading(false))
+  }, [fetchInstance, fetchRules, fetchLogs, fetchProtocols])
 
   useEffect(() => {
     setPageActions(
@@ -151,6 +152,7 @@ export function ServerDetailPage() {
             fetchInstance()
             fetchRules()
             fetchLogs()
+            fetchProtocols()
           }}
           disabled={loading}
         >
@@ -159,7 +161,7 @@ export function ServerDetailPage() {
       </>
     )
     return () => setPageActions(null)
-  }, [fetchInstance, fetchLogs, fetchRules, loading, navigate, setPageActions])
+  }, [fetchInstance, fetchLogs, fetchProtocols, fetchRules, loading, navigate, setPageActions])
 
   const handleStart = async () => {
     if (!instance) return
@@ -252,6 +254,29 @@ export function ServerDetailPage() {
   }
 
   const enabledRuleCount = useMemo(() => rules.filter((rule) => rule.enabled).length, [rules])
+  const currentProtocolDescriptor = useMemo(
+    () => protocols.find((item) => item.type === instance?.protocol),
+    [protocols, instance?.protocol],
+  )
+
+  const summarizeResponse = (response: string) => {
+    try {
+      const parsed = JSON.parse(response) as Record<string, string>
+      const descriptors = currentProtocolDescriptor?.responseParams || []
+      const summary = descriptors
+        .map((descriptor) => {
+          const value = parsed[descriptor.name]
+          if (value === undefined || value === "") {
+            return null
+          }
+          return `${descriptor.label}: ${value}`
+        })
+        .filter(Boolean)
+      return summary.length > 0 ? summary.slice(0, 3).join(" | ") : "无响应配置"
+    } catch {
+      return "响应解析失败"
+    }
+  }
 
   if (!instance) {
     return (
@@ -470,7 +495,7 @@ export function ServerDetailPage() {
                             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
                               响应摘要
                             </div>
-                            <div className="text-sm font-medium">{summarizeResponse(rule.response)}</div>
+                            <div className="text-sm font-medium break-all">{summarizeResponse(rule.response)}</div>
                           </div>
                         </div>
 
@@ -588,6 +613,7 @@ export function ServerDetailPage() {
         onOpenChange={setRuleFormOpen}
         instanceId={instance.id}
         editTarget={editRule}
+        protocolDescriptor={currentProtocolDescriptor}
         onSuccess={fetchRules}
       />
 

@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import com.hxuanyu.frogmoker.service.common.ParamDescriptor;
 
 /**
  * 协议服务端描述信息
@@ -30,8 +31,13 @@ public class ProtocolServerDescriptor extends ComponentDescriptor {
      */
     private String customUIComponent;
 
+    /**
+     * 响应配置参数描述
+     */
+    private List<ParamDescriptor> responseParams;
+
     public ProtocolServerDescriptor(String protocol, String name, String description,
-                                   List<com.hxuanyu.frogmoker.service.common.ParamDescriptor> params) {
+                                   List<ParamDescriptor> params) {
         super(protocol, name, description, params);
     }
 

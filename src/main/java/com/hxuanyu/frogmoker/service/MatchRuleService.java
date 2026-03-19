@@ -6,13 +6,13 @@ import com.hxuanyu.frogmoker.common.BusinessException;
 import com.hxuanyu.frogmoker.entity.MatchRule;
 import com.hxuanyu.frogmoker.mapper.MatchRuleMapper;
 import com.hxuanyu.frogmoker.service.server.MatchCondition;
-import com.hxuanyu.frogmoker.service.server.ResponseConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 匹配规则服务
@@ -58,7 +58,7 @@ public class MatchRuleService {
      */
     @Transactional
     public MatchRule createRule(Long instanceId, String name, String description,
-                                Integer priority, MatchCondition condition, ResponseConfig response) {
+                                Integer priority, MatchCondition condition, Map<String, String> response) {
         log.info("Creating match rule. instanceId={}, name={}", instanceId, name);
 
         // 验证实例存在
@@ -88,7 +88,7 @@ public class MatchRuleService {
      */
     @Transactional
     public MatchRule updateRule(Long id, String name, String description,
-                               Integer priority, MatchCondition condition, ResponseConfig response) {
+                               Integer priority, MatchCondition condition, Map<String, String> response) {
         log.info("Updating match rule. id={}, name={}", id, name);
 
         MatchRule rule = getRule(id);

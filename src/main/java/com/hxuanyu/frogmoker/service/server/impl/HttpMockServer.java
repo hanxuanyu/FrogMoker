@@ -85,6 +85,30 @@ public class HttpMockServer implements ProtocolServer {
                         .build()
         );
 
+        List<ParamDescriptor> responseParams = Arrays.asList(
+                ParamDescriptorBuilder.number("statusCode", "HTTP 状态码")
+                        .description("返回给客户端的 HTTP 状态码")
+                        .required()
+                        .defaultValue("200")
+                        .placeholder("200")
+                        .build(),
+
+                ParamDescriptorBuilder.map("headers", "响应头")
+                        .description("HTTP 响应头，键值对格式")
+                        .mapLabels("响应头名称", "响应头值")
+                        .build(),
+
+                ParamDescriptorBuilder.textarea("body", "响应体")
+                        .description("HTTP 响应内容")
+                        .placeholder("{\"message\": \"OK\"}")
+                        .build(),
+
+                ParamDescriptorBuilder.number("delay", "延迟时间")
+                        .description("模拟响应延迟，单位毫秒")
+                        .placeholder("0")
+                        .build()
+        );
+
         ProtocolServerDescriptor descriptor = new ProtocolServerDescriptor(
                 PROTOCOL,
                 "HTTP 模拟服务端",
@@ -92,6 +116,7 @@ public class HttpMockServer implements ProtocolServer {
                 params
         );
         descriptor.setSupportsMatcher(true);
+        descriptor.setResponseParams(responseParams);
         return descriptor;
     }
 
@@ -207,7 +232,7 @@ public class HttpMockServer implements ProtocolServer {
                 ResponseConfig responseConfig;
                 Long matchedRuleId = null;
                 if (matchedRule != null) {
-                    responseConfig = matchedRule.getResponse();
+                    responseConfig = toResponseConfig(matchedRule.getResponse());
                     matchedRuleId = matchedRule.getId();
                 } else {
                     // 默认响应
@@ -309,19 +334,20 @@ public class HttpMockServer implements ProtocolServer {
 
                 return entities.stream().map(entity -> {
                     com.hxuanyu.frogmoker.service.server.MatchRule rule = new com.hxuanyu.frogmoker.service.server.MatchRule();
-                    rule.setId(entity.getId());
-                    rule.setInstanceId(entity.getInstanceId());
-                    rule.setName(entity.getName());
+                        rule.setId(entity.getId());
+                        rule.setInstanceId(entity.getInstanceId());
+                        rule.setName(entity.getName());
                     rule.setDescription(entity.getDescription());
                     rule.setPriority(entity.getPriority());
                     rule.setEnabled(entity.getEnabled());
 
-                    try {
-                        rule.setCondition(objectMapper.readValue(entity.getCondition(), MatchCondition.class));
-                        rule.setResponse(objectMapper.readValue(entity.getResponse(), ResponseConfig.class));
-                    } catch (Exception e) {
-                        log.error("Error parsing rule. ruleId={}", entity.getId(), e);
-                    }
+                        try {
+                            rule.setCondition(objectMapper.readValue(entity.getCondition(), MatchCondition.class));
+                            rule.setResponse(objectMapper.readValue(entity.getResponse(),
+                                    new com.fasterxml.jackson.core.type.TypeReference<Map<String, String>>() {}));
+                        } catch (Exception e) {
+                            log.error("Error parsing rule. ruleId={}", entity.getId(), e);
+                        }
 
                     return rule;
                 }).collect(Collectors.toList());
@@ -358,6 +384,33 @@ public class HttpMockServer implements ProtocolServer {
                 status.setTotalRequests(requestCountMap.get(instanceId));
                 status.setLastRequestTime(System.currentTimeMillis());
             }
+        }
+
+        private ResponseConfig toResponseConfig(Map<String, String> response) {
+            ResponseConfig config = new ResponseConfig();
+            if (response == null) {
+                return config;
+            }
+
+            String statusCode = response.get("statusCode");
+            if (statusCode != null && !statusCode.trim().isEmpty()) {
+                config.setStatusCode(Integer.parseInt(statusCode.trim()));
+            }
+
+            String body = response.get("body");
+            config.setBody(body);
+
+            String delay = response.get("delay");
+            if (delay != null && !delay.trim().isEmpty()) {
+                config.setDelay(Integer.parseInt(delay.trim()));
+            }
+
+            String headers = response.get("headers");
+            if (headers != null && !headers.trim().isEmpty()) {
+                config.setHeaders(com.hxuanyu.frogmoker.service.client.ParamParser.parseMap(headers));
+            }
+
+            return config;
         }
     }
 }

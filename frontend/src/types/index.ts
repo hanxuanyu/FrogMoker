@@ -136,6 +136,7 @@ export interface ProtocolServerDescriptor {
   name: string
   description: string
   params: ParamDescriptor[]
+  responseParams?: ParamDescriptor[]
   supportsMatcher: boolean
   supportsCustomUI: boolean
   customUIComponent?: string
@@ -205,12 +206,7 @@ export interface MatchCondition {
   children?: MatchCondition[]
 }
 
-export interface ResponseConfig {
-  statusCode: number
-  headers?: Record<string, string>
-  body?: string
-  delay?: number
-}
+export type ResponseConfig = Record<string, string>
 
 export interface MatchRule {
   id: number

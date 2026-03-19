@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
+
 /**
  * 匹配规则
  */
@@ -45,7 +47,7 @@ public class MatchRule {
     /**
      * 响应配置
      */
-    private ResponseConfig response;
+    private Map<String, String> response;
 
     /**
      * 是否启用
