@@ -1,15 +1,9 @@
 import { useState, useEffect } from "react"
-import { Plus, Trash2, FileText } from "lucide-react"
+import { Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { SearchableSelect } from "@/components/ui/searchable-select"
 import { toast } from "sonner"
 import type { MessageTemplateDetail } from "@/types"
 
@@ -40,7 +34,8 @@ export function EnhancedMapEditor({
   onTemplateSelect,
   label = "配置",
 }: EnhancedMapEditorProps) {
-  const [mode, setMode] = useState<"manual" | "template">("manual")
+  const [mode, setMode] = useState<"manual" | "template">("template")
+  const hasTemplates = !!templates && templates.length > 0
 
   const parseValue = (jsonStr: string): Array<{ key: string; value: string }> => {
     try {
@@ -58,8 +53,14 @@ export function EnhancedMapEditor({
   }, [value])
 
   useEffect(() => {
-    setMode(selectedTemplateId ? "template" : "manual")
-  }, [selectedTemplateId])
+    if (selectedTemplateId) {
+      setMode("template")
+      return
+    }
+    if (hasTemplates && (!value || value === "{}")) {
+      setMode("template")
+    }
+  }, [selectedTemplateId, value, hasTemplates])
 
   const handleModeChange = (newMode: string) => {
     const nextMode = newMode as "manual" | "template"
@@ -111,20 +112,44 @@ export function EnhancedMapEditor({
     }
   }
 
-  const hasTemplates = templates && templates.length > 0
-
   return (
     <div className="space-y-3">
       {hasTemplates ? (
         <Tabs value={mode} onValueChange={handleModeChange}>
           <TabsList className="grid w-full grid-cols-2 h-8">
+            <TabsTrigger value="template" className="text-xs">
+              模板填充
+            </TabsTrigger>
             <TabsTrigger value="manual" className="text-xs">
               手动输入
             </TabsTrigger>
-            <TabsTrigger value="template" className="text-xs">
-              从模板选择
-            </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="template" className="space-y-2 mt-3">
+            <SearchableSelect
+              value={selectedTemplateId?.toString() || ""}
+              onValueChange={(nextValue) => void handleTemplateSelect(nextValue)}
+              disabled={templateLoading}
+              placeholder="选择模板..."
+              searchPlaceholder="搜索模板名称..."
+              emptyText="没有找到匹配的模板"
+              options={(templates || []).map((template) => ({
+                value: template.id.toString(),
+                label: template.name,
+                keywords: [template.messageType],
+              }))}
+            />
+            {selectedTemplateId && (
+              <div className="text-xs text-muted-foreground">
+                已选择模板，发送时会渲染并填充到{label}中
+              </div>
+            )}
+            {selectedTemplate && (
+              <div className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
+                当前预览展示模板原文和变量信息，实际发送内容会在发送完成后回显。
+              </div>
+            )}
+          </TabsContent>
 
           <TabsContent value="manual" className="space-y-2 mt-3">
             {pairs.length === 0 && (
@@ -164,38 +189,6 @@ export function EnhancedMapEditor({
               <Plus className="size-3.5 mr-1" />
               添加{keyLabel}
             </Button>
-          </TabsContent>
-
-          <TabsContent value="template" className="space-y-2 mt-3">
-            <Select
-              value={selectedTemplateId?.toString() || ""}
-              onValueChange={handleTemplateSelect}
-              disabled={templateLoading}
-            >
-              <SelectTrigger className="h-9 text-sm">
-                <SelectValue placeholder="选择模板..." />
-              </SelectTrigger>
-              <SelectContent>
-                {templates.map((template) => (
-                  <SelectItem key={template.id} value={template.id.toString()}>
-                    <div className="flex items-center gap-2">
-                      <FileText className="size-3" />
-                      <span>{template.name}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedTemplateId && (
-              <div className="text-xs text-muted-foreground">
-                已选择模板，发送时会渲染并填充到{label}中
-              </div>
-            )}
-            {selectedTemplate && (
-              <div className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
-                当前预览展示模板原文和变量信息，实际发送内容会在发送完成后回显。
-              </div>
-            )}
           </TabsContent>
         </Tabs>
       ) : (

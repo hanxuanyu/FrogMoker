@@ -240,11 +240,11 @@ export function SenderPage() {
               <SelectValue placeholder={param.placeholder || `选择${param.label}`} />
             </SelectTrigger>
             <SelectContent>
-              {param.options?.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
+            {param.options?.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
             </SelectContent>
           </Select>
         )
