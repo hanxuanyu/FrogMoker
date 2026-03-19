@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { toast } from "sonner"
+import type { MessageTemplateDetail } from "@/types"
 
 interface EnhancedMapEditorProps {
   value: string // JSON 字符串
@@ -18,8 +19,11 @@ interface EnhancedMapEditorProps {
   keyLabel?: string
   valueLabel?: string
   placeholder?: string
-  templates?: Array<{ id: number; name: string; content: string }>
-  onTemplateRender?: (templateId: number) => Promise<string>
+  templates?: Array<{ id: number; name: string; messageType: string }>
+  selectedTemplateId?: number
+  selectedTemplate?: MessageTemplateDetail
+  templateLoading?: boolean
+  onTemplateSelect?: (templateId?: number) => Promise<void> | void
   label?: string
 }
 
@@ -30,14 +34,14 @@ export function EnhancedMapEditor({
   valueLabel = "值",
   placeholder,
   templates,
-  onTemplateRender,
+  selectedTemplateId,
+  selectedTemplate,
+  templateLoading = false,
+  onTemplateSelect,
   label = "配置",
 }: EnhancedMapEditorProps) {
   const [mode, setMode] = useState<"manual" | "template">("manual")
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("")
-  const [loading, setLoading] = useState(false)
 
-  // 解析 JSON 字符串为键值对数组
   const parseValue = (jsonStr: string): Array<{ key: string; value: string }> => {
     try {
       const obj = JSON.parse(jsonStr || "{}")
@@ -49,24 +53,22 @@ export function EnhancedMapEditor({
 
   const [pairs, setPairs] = useState<Array<{ key: string; value: string }>>(parseValue(value))
 
-  // 当外部 value 变化时更新 pairs
   useEffect(() => {
     setPairs(parseValue(value))
   }, [value])
 
-  // 切换模式时重置模板选择
+  useEffect(() => {
+    setMode(selectedTemplateId ? "template" : "manual")
+  }, [selectedTemplateId])
+
   const handleModeChange = (newMode: string) => {
-    const mode = newMode as "manual" | "template"
-    setMode(mode)
-    if (mode === "template") {
-      // 切换到模板模式时，如果当前内容为空，清除选择状态
-      if (!value || value === "{}") {
-        setSelectedTemplateId("")
-      }
+    const nextMode = newMode as "manual" | "template"
+    setMode(nextMode)
+    if (nextMode === "manual" && selectedTemplateId && onTemplateSelect) {
+      void onTemplateSelect(undefined)
     }
   }
 
-  // 更新父组件
   const updateParent = (newPairs: Array<{ key: string; value: string }>) => {
     const obj: Record<string, string> = {}
     newPairs.forEach((pair) => {
@@ -96,18 +98,16 @@ export function EnhancedMapEditor({
   }
 
   const handleTemplateSelect = async (templateId: string) => {
-    setSelectedTemplateId(templateId)
-    if (templateId && onTemplateRender) {
-      setLoading(true)
-      try {
-        const rendered = await onTemplateRender(Number(templateId))
-        onChange(rendered)
-        toast.success("已从模板填充")
-      } catch (e: unknown) {
-        toast.error(e instanceof Error ? e.message : "填充失败")
-      } finally {
-        setLoading(false)
+    if (!onTemplateSelect) {
+      return
+    }
+    try {
+      await onTemplateSelect(templateId ? Number(templateId) : undefined)
+      if (templateId) {
+        toast.success("已选择模板")
       }
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "选择模板失败")
     }
   }
 
@@ -167,7 +167,11 @@ export function EnhancedMapEditor({
           </TabsContent>
 
           <TabsContent value="template" className="space-y-2 mt-3">
-            <Select value={selectedTemplateId} onValueChange={handleTemplateSelect} disabled={loading}>
+            <Select
+              value={selectedTemplateId?.toString() || ""}
+              onValueChange={handleTemplateSelect}
+              disabled={templateLoading}
+            >
               <SelectTrigger className="h-9 text-sm">
                 <SelectValue placeholder="选择模板..." />
               </SelectTrigger>
@@ -184,7 +188,12 @@ export function EnhancedMapEditor({
             </Select>
             {selectedTemplateId && (
               <div className="text-xs text-muted-foreground">
-                已选择模板，内容已自动填充到{label}中
+                已选择模板，发送时会渲染并填充到{label}中
+              </div>
+            )}
+            {selectedTemplate && (
+              <div className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
+                当前预览展示模板原文和变量信息，实际发送内容会在发送完成后回显。
               </div>
             )}
           </TabsContent>

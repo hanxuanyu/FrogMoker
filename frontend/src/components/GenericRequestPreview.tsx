@@ -8,16 +8,23 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { TemplateParameterPreview } from "@/components/TemplateParameterPreview"
 import CodeMirror from "@uiw/react-codemirror"
 import { json } from "@codemirror/lang-json"
 import { EditorView } from "@codemirror/view"
-import type { ProtocolClientDescriptor, ProtocolClientParamDescriptor } from "@/types"
+import type {
+  MessageTemplateDetail,
+  ProtocolClientDescriptor,
+  ProtocolClientParamDescriptor,
+} from "@/types"
 
 interface GenericRequestPreviewProps {
   params: Record<string, string>
   isDark: boolean
   protocol?: ProtocolClientDescriptor
   isParamVisible?: (param: ProtocolClientParamDescriptor) => boolean
+  parameterTemplates?: Record<string, number>
+  templateDetails?: Record<number, MessageTemplateDetail>
 }
 
 export function GenericRequestPreview({
@@ -25,6 +32,8 @@ export function GenericRequestPreview({
   isDark,
   protocol,
   isParamVisible,
+  parameterTemplates,
+  templateDetails,
 }: GenericRequestPreviewProps) {
   if (!protocol) {
     return (
@@ -56,6 +65,11 @@ export function GenericRequestPreview({
       }
     }
     return "text"
+  }
+
+  const resolveTemplate = (paramName: string) => {
+    const templateId = parameterTemplates?.[paramName]
+    return templateId ? templateDetails?.[templateId] : undefined
   }
 
   // 渲染简单参数值（紧凑模式）
@@ -192,10 +206,11 @@ export function GenericRequestPreview({
   const groupedParams = visibleParams.reduce(
     (acc, param) => {
       const value = params[param.name] || param.defaultValue || ""
+      const hasTemplate = !!resolveTemplate(param.name)
       const hasValue = value && value.trim() !== "" && value !== "{}" && value !== "[]"
 
       if (param.paramType === "TEXTAREA" || param.paramType === "MAP" || param.paramType === "ARRAY") {
-        if (hasValue) {
+        if (hasValue || hasTemplate) {
           acc.complex.push(param)
         }
       } else {
@@ -207,6 +222,9 @@ export function GenericRequestPreview({
   )
 
   const hasAnyValue = visibleParams.some((param) => {
+    if (resolveTemplate(param.name)) {
+      return true
+    }
     const value = params[param.name] || param.defaultValue || ""
     return value && value.trim() !== "" && value !== "{}" && value !== "[]"
   })
@@ -272,7 +290,8 @@ export function GenericRequestPreview({
         {/* 复杂参数 */}
         {groupedParams.complex.map((param) => {
           const value = params[param.name] || param.defaultValue || ""
-          if (!value || value.trim() === "" || value === "{}" || value === "[]") return null
+          const template = resolveTemplate(param.name)
+          if (!template && (!value || value.trim() === "" || value === "{}" || value === "[]")) return null
 
           return (
             <Card key={param.name}>
@@ -285,7 +304,13 @@ export function GenericRequestPreview({
                   </Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">{renderParamValue(param, value)}</CardContent>
+              <CardContent className="pt-0">
+                {template ? (
+                  <TemplateParameterPreview template={template} isDark={isDark} />
+                ) : (
+                  renderParamValue(param, value)
+                )}
+              </CardContent>
             </Card>
           )
         })}

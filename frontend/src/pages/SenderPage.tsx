@@ -42,6 +42,7 @@ import type {
   SendMessageResponse,
   MessageType,
   ParamDependency,
+  MessageTemplateDetail,
 } from "@/types"
 
 export function SenderPage() {
@@ -63,6 +64,10 @@ export function SenderPage() {
   const [responseFormatted, setResponseFormatted] = useState(false)
   const [copied, setCopied] = useState(false)
   const [response, setResponse] = useState<SendMessageResponse | null>(null)
+  const [parameterTemplates, setParameterTemplates] = useState<Record<string, number>>({})
+  const [templateDetails, setTemplateDetails] = useState<Record<number, MessageTemplateDetail>>({})
+  const [loadingTemplateParam, setLoadingTemplateParam] = useState<string | null>(null)
+  const [requestPreviewMode, setRequestPreviewMode] = useState<"draft" | "sent">("draft")
 
   const fetchTemplates = useCallback(async () => {
     try {
@@ -84,6 +89,18 @@ export function SenderPage() {
       toast.error(e instanceof Error ? e.message : "加载协议列表失败")
     }
   }, [])
+
+  const ensureTemplateDetail = useCallback(
+    async (templateId: number) => {
+      if (templateDetails[templateId]) {
+        return templateDetails[templateId]
+      }
+      const detail = await templateApi.detail(templateId)
+      setTemplateDetails((current) => ({ ...current, [templateId]: detail }))
+      return detail
+    },
+    [templateDetails],
+  )
 
   useEffect(() => {
     setLoading(true)
@@ -120,9 +137,15 @@ export function SenderPage() {
           }
         })
         setClientParams(defaultParams)
+        setParameterTemplates({})
+        setRequestPreviewMode("draft")
       }
     }
   }, [selectedProtocol, protocols])
+
+  useEffect(() => {
+    setRequestPreviewMode("draft")
+  }, [clientParams, parameterTemplates])
 
   // 判断参数是否应该显示（基于依赖条件）
   const isParamVisible = (param: ProtocolClientParamDescriptor): boolean => {
@@ -165,19 +188,46 @@ export function SenderPage() {
     }
   }
 
-  // 渲染模板
-  const handleTemplateRender = async (templateId: number): Promise<string> => {
-    return await templateApi.render(templateId)
-  }
-
   // 格式化内容
   const handleFormat = async (format: string, content: string): Promise<string> => {
     return await templateApi.format(format, content)
   }
 
+  const handleParamTemplateSelect = useCallback(
+    async (paramName: string, templateId?: number) => {
+      setLoadingTemplateParam(paramName)
+      try {
+        if (!templateId) {
+          setParameterTemplates((current) => {
+            const next = { ...current }
+            delete next[paramName]
+            return next
+          })
+          return
+        }
+
+        await ensureTemplateDetail(templateId)
+        setParameterTemplates((current) => ({
+          ...current,
+          [paramName]: templateId,
+        }))
+      } finally {
+        setLoadingTemplateParam(null)
+      }
+    },
+    [ensureTemplateDetail],
+  )
+
+  const getSelectedTemplateDetail = (paramName: string) => {
+    const templateId = parameterTemplates[paramName]
+    return templateId ? templateDetails[templateId] : undefined
+  }
+
   // 渲染不同类型的参数输入组件
   const renderParamInput = (param: ProtocolClientParamDescriptor) => {
     const value = clientParams[param.name] || param.defaultValue || ""
+    const selectedTemplateId = parameterTemplates[param.name]
+    const selectedTemplate = getSelectedTemplateDetail(param.name)
 
     switch (param.paramType) {
       case "SELECT":
@@ -207,7 +257,11 @@ export function SenderPage() {
             format="JSON"
             isDark={isDark}
             templates={templates}
-            onTemplateRender={handleTemplateRender}
+            templateTypes={["JSON", "XML"]}
+            selectedTemplateId={selectedTemplateId}
+            selectedTemplate={selectedTemplate}
+            templateLoading={loadingTemplateParam === param.name}
+            onTemplateSelect={(templateId) => handleParamTemplateSelect(param.name, templateId)}
             onFormat={handleFormat}
             label={param.label}
           />
@@ -237,12 +291,11 @@ export function SenderPage() {
             keyLabel={param.keyLabel}
             valueLabel={param.valueLabel}
             placeholder={param.placeholder}
-            templates={templates.filter((t) => t.messageType === "MAP").map((t) => ({
-              id: t.id,
-              name: t.name,
-              content: t.contentPreview,
-            }))}
-            onTemplateRender={handleTemplateRender}
+            templates={templates.filter((t) => t.messageType === "MAP")}
+            selectedTemplateId={selectedTemplateId}
+            selectedTemplate={selectedTemplate}
+            templateLoading={loadingTemplateParam === param.name}
+            onTemplateSelect={(templateId) => handleParamTemplateSelect(param.name, templateId)}
             label={param.label}
           />
         )
@@ -280,7 +333,8 @@ export function SenderPage() {
     const protocol = protocols.find((p) => p.protocol === selectedProtocol)
     if (protocol) {
       for (const param of protocol.params) {
-        if (param.required && !clientParams[param.name]?.trim()) {
+        const hasTemplate = !!parameterTemplates[param.name]
+        if (param.required && !hasTemplate && !clientParams[param.name]?.trim()) {
           toast.error(`参数 [${param.label}] 为必填项`)
           return
         }
@@ -293,8 +347,10 @@ export function SenderPage() {
       const result = await senderApi.send({
         protocol: selectedProtocol,
         clientParams,
+        parameterTemplates,
       })
       setResponse(result)
+      setRequestPreviewMode("sent")
       if (result.success) {
         toast.success("发送成功")
       } else {
@@ -413,21 +469,37 @@ export function SenderPage() {
               <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                 请求预览
               </h2>
+              {response?.sentClientParams && (
+                <Tabs value={requestPreviewMode} onValueChange={(value) => setRequestPreviewMode(value as "draft" | "sent")}>
+                  <TabsList className="h-8">
+                    <TabsTrigger value="draft" className="text-xs">
+                      配置预览
+                    </TabsTrigger>
+                    <TabsTrigger value="sent" className="text-xs">
+                      实际发送
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              )}
             </div>
             <div className="flex-1 overflow-hidden">
               {selectedProtocol === "HTTP" ? (
                 <HttpRequestPreview
-                  params={clientParams}
+                  params={requestPreviewMode === "sent" && response?.sentClientParams ? response.sentClientParams : clientParams}
                   isDark={isDark}
                   protocol={protocols.find((p) => p.protocol === selectedProtocol)}
                   isParamVisible={isParamVisible}
+                  parameterTemplates={requestPreviewMode === "draft" ? parameterTemplates : undefined}
+                  templateDetails={templateDetails}
                 />
               ) : (
                 <GenericRequestPreview
-                  params={clientParams}
+                  params={requestPreviewMode === "sent" && response?.sentClientParams ? response.sentClientParams : clientParams}
                   isDark={isDark}
                   protocol={protocols.find((p) => p.protocol === selectedProtocol)}
                   isParamVisible={isParamVisible}
+                  parameterTemplates={requestPreviewMode === "draft" ? parameterTemplates : undefined}
+                  templateDetails={templateDetails}
                 />
               )}
             </div>

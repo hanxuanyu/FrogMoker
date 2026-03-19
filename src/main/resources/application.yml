@@ -4,8 +4,10 @@ spring:
   profiles:
     default: dev
   datasource:
-    url: jdbc:sqlite:data/db/frogmoker.db
-    driver-class-name: org.sqlite.JDBC
+    url: jdbc:mysql://192.168.31.40:3306/frogmocker?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: frogmocker
+    password: frogmocker
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml

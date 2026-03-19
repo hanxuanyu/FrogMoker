@@ -31,6 +31,7 @@ public class MatchRule {
     private Integer priority;
 
     @Schema(description = "匹配条件（JSON格式）")
+    @TableField("`condition`")
     private String condition;
 
     @Schema(description = "响应配置（JSON格式）")

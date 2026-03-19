@@ -12,17 +12,30 @@ import { json } from "@codemirror/lang-json"
 import { xml } from "@codemirror/lang-xml"
 import { oneDark } from "@codemirror/theme-one-dark"
 import { EditorView } from "@codemirror/view"
-import type { ProtocolClientDescriptor, ProtocolClientParamDescriptor } from "@/types"
+import { TemplateParameterPreview } from "@/components/TemplateParameterPreview"
+import type {
+  MessageTemplateDetail,
+  ProtocolClientDescriptor,
+  ProtocolClientParamDescriptor,
+} from "@/types"
 
 interface HttpRequestPreviewProps {
   params: Record<string, string>
   isDark: boolean
   protocol?: ProtocolClientDescriptor
   isParamVisible?: (param: ProtocolClientParamDescriptor) => boolean
+  parameterTemplates?: Record<string, number>
+  templateDetails?: Record<number, MessageTemplateDetail>
 }
 
-export function HttpRequestPreview({ params, isDark, protocol, isParamVisible }: HttpRequestPreviewProps) {
-
+export function HttpRequestPreview({
+  params,
+  isDark,
+  protocol,
+  isParamVisible,
+  parameterTemplates,
+  templateDetails,
+}: HttpRequestPreviewProps) {
   const method = params.method || "GET"
   const url = params.url || ""
   const contentType = params.contentType || ""
@@ -38,13 +51,17 @@ export function HttpRequestPreview({ params, isDark, protocol, isParamVisible }:
     return param ? isParamVisible(param) : true
   }
 
-  // 解析 MAP 类型参数
   const parseMap = (jsonStr: string): Record<string, string> => {
     try {
       return JSON.parse(jsonStr || "{}")
     } catch {
       return {}
     }
+  }
+
+  const resolveTemplate = (paramName: string) => {
+    const templateId = parameterTemplates?.[paramName]
+    return templateId ? templateDetails?.[templateId] : undefined
   }
 
   const headersMap = parseMap(headers)
@@ -77,6 +94,10 @@ export function HttpRequestPreview({ params, isDark, protocol, isParamVisible }:
   }
 
   const bodyFormat = detectBodyFormat()
+  const headersTemplate = resolveTemplate("headers")
+  const queryParamsTemplate = resolveTemplate("queryParams")
+  const formDataTemplate = resolveTemplate("formData")
+  const bodyTemplate = resolveTemplate("body")
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -93,7 +114,15 @@ export function HttpRequestPreview({ params, isDark, protocol, isParamVisible }:
       {/* 请求详情 */}
       <div className="flex-1 overflow-y-auto">
         {/* 请求头 */}
-        {isVisible("headers") && Object.keys(headersMap).length > 0 && (
+        {isVisible("headers") && headersTemplate && (
+          <div className="px-6 py-4 border-b">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              请求头模板
+            </h3>
+            <TemplateParameterPreview template={headersTemplate} isDark={isDark} />
+          </div>
+        )}
+        {isVisible("headers") && !headersTemplate && Object.keys(headersMap).length > 0 && (
           <div className="px-6 py-4 border-b">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
               请求头
@@ -124,7 +153,15 @@ export function HttpRequestPreview({ params, isDark, protocol, isParamVisible }:
         )}
 
         {/* 查询参数 */}
-        {isVisible("queryParams") && Object.keys(queryParamsMap).length > 0 && (
+        {isVisible("queryParams") && queryParamsTemplate && (
+          <div className="px-6 py-4 border-b">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              查询参数模板
+            </h3>
+            <TemplateParameterPreview template={queryParamsTemplate} isDark={isDark} />
+          </div>
+        )}
+        {isVisible("queryParams") && !queryParamsTemplate && Object.keys(queryParamsMap).length > 0 && (
           <div className="px-6 py-4 border-b">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
               查询参数
@@ -167,7 +204,9 @@ export function HttpRequestPreview({ params, isDark, protocol, isParamVisible }:
                 </Badge>
               )}
             </div>
-            {contentType === "application/x-www-form-urlencoded" && isVisible("formData") && Object.keys(formDataMap).length > 0 ? (
+            {contentType === "application/x-www-form-urlencoded" && isVisible("formData") && formDataTemplate ? (
+              <TemplateParameterPreview template={formDataTemplate} isDark={isDark} />
+            ) : contentType === "application/x-www-form-urlencoded" && isVisible("formData") && Object.keys(formDataMap).length > 0 ? (
               <div className="rounded-lg border overflow-hidden">
                 <Table>
                   <TableHeader>
@@ -190,6 +229,8 @@ export function HttpRequestPreview({ params, isDark, protocol, isParamVisible }:
                   </TableBody>
                 </Table>
               </div>
+            ) : isVisible("body") && bodyTemplate ? (
+              <TemplateParameterPreview template={bodyTemplate} isDark={isDark} />
             ) : isVisible("body") && body ? (
               bodyFormat === "text" ? (
                 <pre className="text-xs font-mono bg-muted rounded-lg p-4 whitespace-pre-wrap break-all border">
@@ -225,6 +266,8 @@ export function HttpRequestPreview({ params, isDark, protocol, isParamVisible }:
 
         {/* 无内容提示 */}
         {!hasBody &&
+          !(isVisible("headers") && headersTemplate) &&
+          !(isVisible("queryParams") && queryParamsTemplate) &&
           !(isVisible("headers") && Object.keys(headersMap).length > 0) &&
           !(isVisible("queryParams") && Object.keys(queryParamsMap).length > 0) && (
           <div className="flex items-center justify-center h-full text-xs text-muted-foreground">

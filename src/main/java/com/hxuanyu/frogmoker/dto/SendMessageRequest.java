@@ -33,4 +33,9 @@ public class SendMessageRequest {
      * 客户端参数（如 url, method 等）
      */
     private Map<String, String> clientParams;
+
+    /**
+     * 使用报文模板的客户端参数，key 为参数名，value 为模板 ID
+     */
+    private Map<String, Long> parameterTemplates;
 }

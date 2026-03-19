@@ -28,7 +28,6 @@ CREATE TABLE IF NOT EXISTS generator_sequence_state
     updated_at    DATETIME NOT NULL DEFAULT (datetime('now', 'localtime'))
 );
 
--- 服务端实例表
 CREATE TABLE IF NOT EXISTS server_instance (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(128) NOT NULL,
@@ -43,14 +42,13 @@ CREATE TABLE IF NOT EXISTS server_instance (
     updated_at DATETIME NOT NULL DEFAULT (datetime('now', 'localtime'))
 );
 
--- 匹配规则表
 CREATE TABLE IF NOT EXISTS match_rule (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     instance_id INTEGER NOT NULL,
     name VARCHAR(128) NOT NULL,
     description VARCHAR(512),
     priority INTEGER NOT NULL DEFAULT 0,
-    condition TEXT NOT NULL,
+    `condition` TEXT NOT NULL,
     response TEXT NOT NULL,
     enabled BOOLEAN NOT NULL DEFAULT 1,
     created_at DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
@@ -60,7 +58,6 @@ CREATE TABLE IF NOT EXISTS match_rule (
 
 CREATE INDEX IF NOT EXISTS idx_match_rule_instance ON match_rule(instance_id, priority DESC);
 
--- 请求日志表
 CREATE TABLE IF NOT EXISTS request_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     instance_id INTEGER NOT NULL,

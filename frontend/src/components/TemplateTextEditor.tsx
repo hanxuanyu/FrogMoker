@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { FileText, Edit3, AlignLeft } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,7 @@ import { json } from "@codemirror/lang-json"
 import { xml } from "@codemirror/lang-xml"
 import { EditorView } from "@codemirror/view"
 import { toast } from "sonner"
+import type { MessageTemplateDetail } from "@/types"
 
 interface TemplateTextEditorProps {
   value: string
@@ -21,7 +22,11 @@ interface TemplateTextEditorProps {
   format: "JSON" | "XML"
   isDark: boolean
   templates?: Array<{ id: number; name: string; messageType: string }>
-  onTemplateRender?: (templateId: number) => Promise<string>
+  templateTypes?: Array<"JSON" | "XML">
+  selectedTemplateId?: number
+  selectedTemplate?: MessageTemplateDetail
+  templateLoading?: boolean
+  onTemplateSelect?: (templateId?: number) => Promise<void> | void
   onFormat?: (format: string, content: string) => Promise<string>
   label?: string
 }
@@ -32,43 +37,46 @@ export function TemplateTextEditor({
   format,
   isDark,
   templates,
-  onTemplateRender,
+  templateTypes,
+  selectedTemplateId,
+  selectedTemplate,
+  templateLoading = false,
+  onTemplateSelect,
   onFormat,
 }: TemplateTextEditorProps) {
   const [mode, setMode] = useState<"manual" | "template">("manual")
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("")
-  const [loading, setLoading] = useState(false)
   const [formatting, setFormatting] = useState(false)
 
-  // 过滤匹配格式的模板
-  const filteredTemplates = templates?.filter((t) => t.messageType === format) || []
+  useEffect(() => {
+    setMode(selectedTemplateId ? "template" : "manual")
+  }, [selectedTemplateId])
+
+  const allowedTemplateTypes = templateTypes && templateTypes.length > 0 ? templateTypes : [format]
+  const filteredTemplates =
+    templates?.filter((t) =>
+      allowedTemplateTypes.includes(t.messageType as "JSON" | "XML"),
+    ) || []
   const hasTemplates = filteredTemplates.length > 0
 
-  // 切换模式时重置模板选择
   const handleModeChange = (newMode: string) => {
-    const mode = newMode as "manual" | "template"
-    setMode(mode)
-    if (mode === "template") {
-      // 切换到模板模式时，如果当前内容为空，清除选择状态
-      if (!value || value.trim() === "") {
-        setSelectedTemplateId("")
-      }
+    const nextMode = newMode as "manual" | "template"
+    setMode(nextMode)
+    if (nextMode === "manual" && selectedTemplateId && onTemplateSelect) {
+      void onTemplateSelect(undefined)
     }
   }
 
   const handleTemplateSelect = async (templateId: string) => {
-    setSelectedTemplateId(templateId)
-    if (templateId && onTemplateRender) {
-      setLoading(true)
-      try {
-        const rendered = await onTemplateRender(Number(templateId))
-        onChange(rendered)
-        toast.success("已从模板填充")
-      } catch (e: unknown) {
-        toast.error(e instanceof Error ? e.message : "填充失败")
-      } finally {
-        setLoading(false)
+    if (!onTemplateSelect) {
+      return
+    }
+    try {
+      await onTemplateSelect(templateId ? Number(templateId) : undefined)
+      if (templateId) {
+        toast.success("已选择模板")
       }
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "选择模板失败")
     }
   }
 
@@ -90,6 +98,7 @@ export function TemplateTextEditor({
     format === "JSON"
       ? '{\n  "key": "value"\n}'
       : '<root>\n  <element>value</element>\n</root>'
+  const selectedTemplateFormat = selectedTemplate?.messageType === "XML" ? "XML" : "JSON"
 
   return (
     <div className="h-full flex flex-col">
@@ -148,9 +157,9 @@ export function TemplateTextEditor({
 
           <TabsContent value="template" className="flex-1 mt-3 space-y-3">
             <Select
-              value={selectedTemplateId}
+              value={selectedTemplateId?.toString() || ""}
               onValueChange={handleTemplateSelect}
-              disabled={loading}
+              disabled={templateLoading}
             >
               <SelectTrigger className="h-9 text-sm">
                 <SelectValue placeholder="选择模板..." />
@@ -166,12 +175,12 @@ export function TemplateTextEditor({
                 ))}
               </SelectContent>
             </Select>
-            {selectedTemplateId && value && (
+            {selectedTemplateId && selectedTemplate && (
               <div className="flex-1 rounded-lg overflow-hidden border text-xs">
                 <CodeMirror
-                  value={value}
+                  value={selectedTemplate.content}
                   height="100%"
-                  extensions={[format === "JSON" ? json() : xml(), EditorView.lineWrapping]}
+                  extensions={[selectedTemplateFormat === "JSON" ? json() : xml(), EditorView.lineWrapping]}
                   theme={isDark ? "dark" : "light"}
                   editable={false}
                   basicSetup={{

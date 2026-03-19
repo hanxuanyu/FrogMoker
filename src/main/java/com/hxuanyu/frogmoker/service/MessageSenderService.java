@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -31,42 +32,31 @@ public class MessageSenderService {
         Long templateId = request.getTemplateId();
         String customContent = request.getCustomContent();
         String protocol = normalizeProtocol(request.getProtocol());
-        Map<String, String> clientParams = request.getClientParams();
+        Map<String, String> clientParams = request.getClientParams() == null
+                ? new HashMap<String, String>()
+                : new HashMap<String, String>(request.getClientParams());
+        Map<String, Long> parameterTemplates = request.getParameterTemplates() == null
+                ? new HashMap<String, Long>()
+                : new HashMap<String, Long>(request.getParameterTemplates());
 
-        log.info("Sending message. templateId={}, hasCustomContent={}, protocol={}",
-                templateId, customContent != null && !customContent.isEmpty(), protocol);
+        log.info("Sending message. templateId={}, hasCustomContent={}, protocol={}, templateParamCount={}",
+                templateId, customContent != null && !customContent.isEmpty(), protocol, parameterTemplates.size());
 
-        // 验证协议类型
         if (protocol == null || protocol.isEmpty()) {
             throw new BusinessException("协议类型不能为空");
         }
 
-        // 获取客户端
         ProtocolClient client = clientRegistry.getClient(protocol);
+        validateClientParams(client.getDescriptor(), clientParams, parameterTemplates);
+        Map<String, String> resolvedClientParams = resolveClientParams(clientParams, parameterTemplates);
+        String messageContent = resolveMessageContent(templateId, customContent, resolvedClientParams);
+        ClientResponse clientResponse = client.send(messageContent, resolvedClientParams);
 
-        // 验证必填参数
-        validateClientParams(client.getDescriptor(), clientParams);
-
-        // 获取报文内容：优先使用模板，否则使用自定义内容，如果都没有则使用空字符串
-        String messageContent = "";
-        if (templateId != null) {
-            messageContent = templateService.renderTemplate(templateId);
-            log.debug("Template rendered for sending. templateId={}, messageLength={}", templateId, messageContent.length());
-        } else if (customContent != null && !customContent.trim().isEmpty()) {
-            messageContent = customContent.trim();
-            log.debug("Using custom content for sending. messageLength={}", messageContent.length());
-        } else {
-            log.debug("No message content provided, using empty string");
-        }
-
-        // 发送报文
-        ClientResponse clientResponse = client.send(messageContent, clientParams);
-
-        // 构造响应
         SendMessageResponse response = new SendMessageResponse();
         response.setSuccess(clientResponse.isSuccess());
         response.setStatusCode(clientResponse.getStatusCode());
         response.setSentMessage(messageContent);
+        response.setSentClientParams(resolvedClientParams);
         response.setResponseContent(clientResponse.getContent());
         response.setErrorMessage(clientResponse.getErrorMessage());
         response.setDuration(clientResponse.getDuration());
@@ -82,9 +72,14 @@ public class MessageSenderService {
         return clientRegistry.listDescriptors();
     }
 
-    private void validateClientParams(ProtocolClientDescriptor descriptor, Map<String, String> params) {
+    private void validateClientParams(ProtocolClientDescriptor descriptor,
+                                      Map<String, String> params,
+                                      Map<String, Long> parameterTemplates) {
         for (ParamDescriptor paramDesc : descriptor.getParams()) {
             if (!paramDesc.isRequired()) {
+                continue;
+            }
+            if (parameterTemplates.containsKey(paramDesc.getName())) {
                 continue;
             }
             String value = params.get(paramDesc.getName());
@@ -94,6 +89,48 @@ public class MessageSenderService {
                 throw new BusinessException("参数 [" + paramDesc.getLabel() + "] 为必填项");
             }
         }
+    }
+
+    private Map<String, String> resolveClientParams(Map<String, String> clientParams, Map<String, Long> parameterTemplates) {
+        Map<String, String> resolved = new HashMap<String, String>(clientParams);
+        for (Map.Entry<String, Long> entry : parameterTemplates.entrySet()) {
+            Long templateId = entry.getValue();
+            if (templateId == null) {
+                continue;
+            }
+            String rendered = templateService.renderTemplate(templateId);
+            resolved.put(entry.getKey(), rendered);
+            log.debug("Resolved template parameter for sending. paramName={}, templateId={}, renderedLength={}",
+                    entry.getKey(), templateId, rendered.length());
+        }
+        return resolved;
+    }
+
+    private String resolveMessageContent(Long templateId, String customContent, Map<String, String> resolvedClientParams) {
+        if (templateId != null) {
+            String rendered = templateService.renderTemplate(templateId);
+            log.debug("Template rendered for sending. templateId={}, messageLength={}", templateId, rendered.length());
+            return rendered;
+        }
+
+        if (customContent != null && !customContent.trim().isEmpty()) {
+            String trimmed = customContent.trim();
+            log.debug("Using custom content for sending. messageLength={}", trimmed.length());
+            return trimmed;
+        }
+
+        String paramMessage = resolvedClientParams.get("message");
+        if (paramMessage != null && !paramMessage.trim().isEmpty()) {
+            return paramMessage;
+        }
+
+        String paramBody = resolvedClientParams.get("body");
+        if (paramBody != null && !paramBody.trim().isEmpty()) {
+            return paramBody;
+        }
+
+        log.debug("No standalone message content resolved, using empty string");
+        return "";
     }
 
     private String normalizeProtocol(String protocol) {

@@ -18,7 +18,7 @@
 - 📤 **协议客户端** - 内置 HTTP 客户端，支持扩展其他协议
 - 🎨 **现代化 UI** - 基于 React + Tailwind CSS，支持深浅色主题
 - 📝 **代码编辑器** - 集成 CodeMirror，提供语法高亮和自动补全
-- 🚀 **开箱即用** - 使用 SQLite，无需额外配置数据库
+- 🚀 **开箱即用** - 默认连接 MySQL，空库启动时自动建表
 
 ## 🖥️ 界面预览
 
@@ -93,7 +93,7 @@ java -jar target/FrogMoker-*.jar
 
 ### 后端
 - **框架**: Spring Boot 2.x
-- **持久层**: MyBatis-Plus + SQLite（可切换 MySQL）
+- **持久层**: MyBatis-Plus + MySQL（兼容 SQLite）
 - **API 文档**: Knife4j + SpringDoc OpenAPI 3
 
 ### 前端
@@ -183,11 +183,18 @@ FrogMoker/
 │       ├── service/       # 业务逻辑
 │       ├── entity/        # 数据实体
 │       └── config/        # 配置类
-├── data/                  # 运行时数据（自动创建）
-│   └── db/
-│       └── frogmoker.db   # SQLite 数据库
 ├── DEV.md                 # 开发文档
 └── README.md              # 项目说明
+```
+
+默认后端数据源配置：
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:mysql://192.168.31.40:3306/frogmocker?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: frogmocker
+    password: frogmocker
 ```
 
 ## 📝 API 文档

@@ -109,12 +109,14 @@ export interface SendMessageRequest {
   customContent?: string
   protocol: string
   clientParams: Record<string, string>
+  parameterTemplates?: Record<string, number>
 }
 
 export interface SendMessageResponse {
   success: boolean
   statusCode?: number
   sentMessage: string
+  sentClientParams?: Record<string, string>
   responseContent?: string
   errorMessage?: string
   duration: number
