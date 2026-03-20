@@ -159,9 +159,10 @@ FrogMoker/
 在 `service/generator/` 目录下新建生成器类，实现以下三个方法：
 
 ```java
-package com.hxuanyu.frogmoker.service.generator;
+package com.hxuanyu.frogmocker.service.generator;
 
 import org.springframework.stereotype.Component;
+
 import java.util.List;
 import java.util.Map;
 
@@ -182,19 +183,19 @@ public class RandomUuidVariableGenerator implements VariableValueGenerator {
     @Override
     public VariableGeneratorDescriptor getDescriptor() {
         return new VariableGeneratorDescriptor(
-            getType(),
-            "随机 UUID",
-            "每次渲染时生成一个随机的 UUID 字符串",
-            List.of(
-                // 参数描述：name, label, description, required, defaultValue
-                new VariableGeneratorParamDescriptor(
-                    "uppercase",          // 参数 key（与 params.get("uppercase") 对应）
-                    "大写",               // 前端显示的标签
-                    "是否输出大写格式，填写 true 或 false",
-                    false,                // 是否必填
-                    "false"               // 默认值
+                getType(),
+                "随机 UUID",
+                "每次渲染时生成一个随机的 UUID 字符串",
+                List.of(
+                        // 参数描述：name, label, description, required, defaultValue
+                        new VariableGeneratorParamDescriptor(
+                                "uppercase",          // 参数 key（与 params.get("uppercase") 对应）
+                                "大写",               // 前端显示的标签
+                                "是否输出大写格式，填写 true 或 false",
+                                false,                // 是否必填
+                                "false"               // 默认值
+                        )
                 )
-            )
         );
     }
 
@@ -285,9 +286,10 @@ public class YamlMessageContentProcessor implements MessageContentProcessor {
 在 `service/client/` 目录下新建客户端类，实现以下三个方法：
 
 ```java
-package com.hxuanyu.frogmoker.service.client;
+package com.hxuanyu.frogmocker.service.client;
 
 import org.springframework.stereotype.Component;
+
 import java.util.Arrays;
 import java.util.Map;
 
@@ -310,12 +312,12 @@ public class CustomProtocolClient implements ProtocolClient {
     @Override
     public ProtocolClientDescriptor getDescriptor() {
         return new ProtocolClientDescriptor(
-            PROTOCOL,
-            "自定义协议客户端",
-            "通过自定义协议发送报文",
-            Arrays.asList(
-                // 参数描述列表，详见下文
-            )
+                PROTOCOL,
+                "自定义协议客户端",
+                "通过自定义协议发送报文",
+                Arrays.asList(
+                        // 参数描述列表，详见下文
+                )
         );
     }
 
@@ -372,7 +374,7 @@ public class CustomProtocolClient implements ProtocolClient {
 使用静态导入简化代码：
 
 ```java
-import static com.hxuanyu.frogmoker.service.client.ProtocolClientParamBuilder.*;
+
 ```
 
 **基本参数示例：**

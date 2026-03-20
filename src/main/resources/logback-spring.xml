@@ -44,7 +44,7 @@
     </appender>
 
     <springProfile name="dev">
-        <logger name="com.hxuanyu.frogmoker.mapper" level="OFF" additivity="false"/>
+        <logger name="com.hxuanyu.frogmocker.mapper" level="OFF" additivity="false"/>
         <logger name="org.apache.ibatis" level="WARN"/>
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
@@ -52,7 +52,7 @@
     </springProfile>
 
     <springProfile name="prod">
-        <logger name="com.hxuanyu.frogmoker.mapper" level="DEBUG" additivity="false">
+        <logger name="com.hxuanyu.frogmocker.mapper" level="DEBUG" additivity="false">
             <appender-ref ref="MYBATIS_FILE"/>
         </logger>
         <logger name="org.apache.ibatis" level="WARN"/>
